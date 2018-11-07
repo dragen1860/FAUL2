@@ -12,15 +12,25 @@ class Learner(nn.Module):
         super(Learner, self).__init__()
 
         self.config = [
-            # [c_out, c_in, kernelsz, kernelsz, stride, padding]
-            ('conv2d', [16, 1, 1, 1, 1, 1]),
-            ('conv2d', [16, 16, 3, 3, 1, 0]),
-            ('conv2d', [16, 16, 3, 3, 1, 1]),
-            ('conv2d', [8, 16, 3, 3, 1, 1]),
+            # conv2d:[c_out, c_in, kernelsz, kernelsz, stride, padding]
+            # pool2d:[kernelsz, stride, padding]
+            # upsample:[factor]
+            ('conv2d', [16, 1, 1, 1, 1, 1]), # the first
+
+            ('conv2d', [16, 16, 3, 3, 1, 0]),   # factor1
+            ('avg_pool2d', [2, 2, 0]),          # factor1
+            ('conv2d', [16, 16, 3, 3, 1, 1]),   # factor1
+            ('avg_pool2d', [2, 2, 0]),          # factor1
+
+            ('conv2d', [4, 16, 3, 3, 1, 1]),    #
+
             ('hidden', []), # hidden variable
-            ('conv2d', [16, 8, 3, 3, 1, 1]),
-            ('conv2d', [16, 16, 3, 3, 1, 1]),
-            ('conv2d', [16, 16, 3, 3, 1, 1]),
+            ('conv2d', [16, 4, 3, 3, 1, 1]),    # defactor1
+            ('upsample',[2]),
+            ('conv2d', [16, 16, 3, 3, 1, 1]),   # defactor1
+            ('upsample',[2]),
+
+            # ('conv2d', [16, 16, 3, 3, 1, 1]),
             ('conv2d', [1, 16, 3, 3, 1, 1])
         ]
 
@@ -30,15 +40,19 @@ class Learner(nn.Module):
         for name, param in self.config:
             if name is 'conv2d':
                 # [ch_out, ch_in, kernelsz, kernelsz]
-                self.vars.append(nn.Parameter(torch.ones(*param[:4])))
+                w = nn.Parameter(torch.ones(*param[:4]))
+                # gain=1 according to cbfin's implementation
+                torch.nn.init.xavier_uniform_(w)
+                self.vars.append(w)
                 # [ch_out]
                 self.vars.append(nn.Parameter(torch.zeros(param[0])))
 
             elif name is 'hidden':
                 continue
-
-            elif name is 'linear':
-                raise NotImplementedError
+            elif name is 'upsample':
+                continue
+            elif name is 'avg_pool2d':
+                continue
             else:
                 raise NotImplementedError
 
@@ -60,8 +74,12 @@ class Learner(nn.Module):
             elif name is 'hidden':
                 tmp = name + ':' + str(tuple(param))
                 info += tmp + '\n'
-            elif name is 'linear':
-                raise NotImplementedError
+            elif name is 'upsample':
+                tmp = name + ':' + str(tuple(param))
+                info += tmp + '\n'
+            elif name is 'avg_pool2d':
+                tmp = 'avg_pool2d:(k:%d, stride:%d, padding:%d)'%(param[0], param[1], param[2])
+                info += tmp + '\n'
             else:
                 raise NotImplementedError
 
@@ -83,9 +101,11 @@ class Learner(nn.Module):
                 # print(name, param, '\tout:', x.shape)
             elif name is 'hidden':
                 continue
+            elif name is 'upsample':
+                x = F.upsample_nearest(x, scale_factor=param[0])
 
-            elif name is 'linear':
-                raise NotImplementedError
+            elif name is 'avg_pool2d':
+                x = F.max_pool2d(x, param[0], param[1], param[2])
             else:
                 raise NotImplementedError
 
@@ -113,11 +133,13 @@ class Learner(nn.Module):
                 idx += 2
 
             elif name is 'hidden':
-
                 break
 
-            elif name is 'linear':
-                raise NotImplementedError
+            elif name is 'upsample':
+                x = F.upsample_nearest(x, scale_factor=param[0])
+
+            elif name is 'avg_pool2d':
+                x = F.max_pool2d(x, param[0], param[1], param[2])
             else:
                 raise NotImplementedError
 
@@ -157,8 +179,11 @@ class Learner(nn.Module):
 
             elif name is 'hidden':
                 raise NotImplementedError
-            elif name is 'linear':
-                raise NotImplementedError
+            elif name is 'upsample':
+                x = F.upsample_nearest(x, scale_factor=param[0])
+
+            elif name is 'avg_pool2d':
+                x = F.max_pool2d(x, param[0], param[1], param[2])
             else:
                 raise NotImplementedError
 
@@ -230,11 +255,10 @@ class MetaLearner(nn.Module):
         :param y_qry:
         :return:
         """
-        batchsz, sptsz, c_, h, w = x_spt.size()
-        qrysz = x_qry.size(1)
-        assert batchsz is 1
-        assert x_qry.size(0) is 1
-        x_spt, y_spt, x_qry, y_qry = x_spt.squeeze(0), y_spt.squeeze(0), x_qry.squeeze(0), y_qry.squeeze(0)
+        sptsz, c_, h, w = x_spt.size()
+        qrysz = x_qry.size(0)
+        assert len(x_spt.shape) == 4
+        assert len(x_qry.shape) == 4
 
         # use theta to forward
         pred = self.learner(x_spt)
@@ -272,7 +296,7 @@ class MetaLearner(nn.Module):
 
         return h_spt0, h_spt1, h_qry0, h_qry1
 
-    def classify_train(self, x_train, y_train, x_test, y_test, batchsz=32, train_step=100):
+    def classify_train(self, x_train, y_train, x_test, y_test, use_h=True, batchsz=32, train_step=100):
         """
 
         :param x_train: [b, c_, h, w]
@@ -288,10 +312,11 @@ class MetaLearner(nn.Module):
         criteon = nn.CrossEntropyLoss()
         optimizer = optim.Adam(self.classifier.parameters(), lr=1e-3)
 
-        # stop gradient on hidden layer
-        # [b, h_c, h_d, h_d]
-        x_train = self.learner.forward_encoder(x_train).detach()
-        x_test = self.learner.forward_encoder(x_test).detach()
+        if not use_h: # given image
+            # stop gradient on hidden layer
+            # [b, h_c, h_d, h_d]
+            x_train = self.learner.forward_encoder(x_train).detach()
+            x_test = self.learner.forward_encoder(x_test).detach()
         y_train, y_test = y_train.detach(), y_test.detach()
 
         db_train = DataLoader(TensorDataset(x_train, y_train), batch_size=batchsz, shuffle=True)

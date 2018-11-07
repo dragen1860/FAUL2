@@ -33,8 +33,8 @@ class MnistNShot(Dataset):
         self.qrysz = self.n_way * self.k_qry  # number of samples per set for evaluation
         self.imgsz = imgsz  # resize to
         self.episode_num = episode_num
-        print('shuffle %s DB: %d-way, %d-shot, %d-query, resize:%d' %
-              ('train' if training else 'test', n_way, k_spt, k_qry, imgsz))
+        print('shuffle %s DB: %d-way, %d-shot, %d-query, resize:%d episode num:%d' %
+              ('train' if training else 'test', n_way, k_spt, k_qry, imgsz, episode_num))
 
         if training:
             self.transform = transforms.Compose([
@@ -122,8 +122,9 @@ class MnistNShot(Dataset):
             for cls in selected_cls:
                 img_num_per_cls = self.k_spt + self.k_qry
                 # 2. select k_shot + k_query for each class
-                selected_imgs_idx = np.random.choice(len(self.data[cls]), img_num_per_cls, False)
-                #                      select label | select setsz | select spt or qry = [img_num_per_cls, 1, 32, 32]
+                selected_imgs_idx = np.random.choice(len(self.data[cls]), img_num_per_cls,
+                                                     False if img_num_per_cls < len(self.data[cls]) else True)
+                #    select label | select setsz | select spt or qry = [k_spt/k_qry, 1, 32, 32]
                 spt_x.append(self.data[cls][selected_imgs_idx][:self.k_spt])
                 # cls: relative index label
                 # self.table[cls]: global index label
@@ -147,6 +148,15 @@ class MnistNShot(Dataset):
             qry_y = qry_y[perm]
 
 
+            assert not torch.isnan(spt_x).any()
+            assert not torch.isnan(spt_y).any()
+            assert not torch.isnan(qry_x).any()
+            assert not torch.isnan(qry_y).any()
+
+            # spt_x: tensor[sptsz, 1, 32, 32]
+            # spt_y: tensor[sptsz]
+            # qry_x: tensor[qrysz, 1, 32, 32]
+            # qry_y: tensor[qrysz]
             self.episodes.append([spt_x, spt_y, qry_x, qry_y])
 
 

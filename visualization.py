@@ -12,7 +12,7 @@ class VisualH:
 
     def __init__(self):
 
-        plt.ion()
+        # plt.ion()
 
         self.tsne = manifold.TSNE(n_components=2, init='pca', random_state=0)
 
@@ -27,15 +27,17 @@ class VisualH:
         :param y_qry: [b]
         :return:
         """
-        h_spt0 = h_spt0.cpu().numpy().view(h_spt0.size(0), -1)
-        h_spt1 = h_spt1.cpu().numpy().view(h_spt1.size(0), -1)
-        h_qry0 = h_qry0.cpu().numpy().view(h_qry0.size(0), -1)
-        h_qry1 = h_qry1.cpu().numpy().view(h_qry1.size(0), -1)
+        h_spt0 = h_spt0.view(h_spt0.size(0), -1).cpu().numpy()
+        h_spt1 = h_spt1.view(h_spt1.size(0), -1).cpu().numpy()
+        h_qry0 = h_qry0.view(h_qry0.size(0), -1).cpu().numpy()
+        h_qry1 = h_qry1.view(h_qry1.size(0), -1).cpu().numpy()
         y_spt = y_spt.cpu().numpy()
         y_qry = y_qry.cpu().numpy()
 
         # [b, -1] => [b, 2]
+        # print(h_spt0.shape)
         h_spt0 = self.tsne.fit_transform(h_spt0)
+        # print(h_spt0.shape)
         h_spt1 = self.tsne.fit_transform(h_spt1)
         h_qry0 = self.tsne.fit_transform(h_qry0)
         h_qry1 = self.tsne.fit_transform(h_qry1)
@@ -45,7 +47,6 @@ class VisualH:
         self.plot(h_qry0, y_qry, 2, 'h_qry0')
         self.plot(h_qry1, y_qry, 3, 'h_qry1')
 
-        plt.pause(0.001)
 
     def plot(self, X, y, fig, title):
         """
@@ -59,16 +60,16 @@ class VisualH:
         x_min, x_max = np.min(X, 0), np.max(X, 0)
         X = (X - x_min) / (x_max - x_min)
 
-        plt.figure(fig)
-        ax = plt.subplot(111)
+        plt.figure()
         # for each point
         for i in range(X.shape[0]):
             plt.text(X[i, 0], X[i, 1], str(y[i]),
                      color=plt.cm.Set1(y[i] / 10.),
-                     fontdict={'weight': 'normal', 'size': 10})
+                     fontdict={'weight': 'normal', 'size': 9})
 
         plt.xticks([]), plt.yticks([])
         plt.title(title)
+        plt.savefig(title+'.eps', format='eps', dpi=1000)
 
 
 
