@@ -51,6 +51,9 @@ def main(args):
                 vis.line([qry_loss.item()], [global_step], win='qry_loss', update='append',
                          opts={'title':'qry_loss'})
 
+                if global_step % 200 == 0:
+                    print(global_step, qry_loss.item())
+
         # clustering, visualization and classification
         db_test = DataLoader(
             MnistNShot('db/mnist', training=False, n_way=5, k_spt=1, k_qry=45, imgsz=32, episode_num=100),
@@ -65,7 +68,7 @@ def main(args):
             # and test the representation on merged(test_spt, test_qry) set
             h_spt0, h_spt1, h_qry0, h_qry1 = net.finetuning(spt_x, spt_y, qry_x, qry_y)
 
-            visualh.update(h_spt0, h_spt1, h_qry0, h_qry1, spt_y, qry_y)
+            visualh.update(h_spt0, h_spt1, h_qry0, h_qry1, spt_y, qry_y, global_step)
 
 
 

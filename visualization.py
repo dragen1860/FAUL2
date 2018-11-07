@@ -1,10 +1,10 @@
+import  os
+from    time import time
 
-from time import time
-
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import offsetbox
-from sklearn import manifold, datasets, decomposition
+import  numpy as np
+import  matplotlib.pyplot as plt
+from    matplotlib import offsetbox
+from    sklearn import manifold, datasets, decomposition
 
 
 
@@ -16,7 +16,7 @@ class VisualH:
 
         self.tsne = manifold.TSNE(n_components=2, init='pca', random_state=0)
 
-    def update(self, h_spt0, h_spt1, h_qry0, h_qry1, y_spt, y_qry):
+    def update(self, h_spt0, h_spt1, h_qry0, h_qry1, y_spt, y_qry, global_step):
         """
 
         :param h_spt0: [b, h_c, h_d, h_c], hidden representation of spt before update,
@@ -25,6 +25,7 @@ class VisualH:
         :param h_qry1:
         :param y_spt: [b]
         :param y_qry: [b]
+        :param global_step:
         :return:
         """
         h_spt0 = h_spt0.view(h_spt0.size(0), -1).cpu().numpy()
@@ -42,18 +43,18 @@ class VisualH:
         h_qry0 = self.tsne.fit_transform(h_qry0)
         h_qry1 = self.tsne.fit_transform(h_qry1)
 
-        self.plot(h_spt0, y_spt, 0, 'h_spt0')
-        self.plot(h_spt1, y_spt, 1, 'h_spt1')
-        self.plot(h_qry0, y_qry, 2, 'h_qry0')
-        self.plot(h_qry1, y_qry, 3, 'h_qry1')
+        self.plot(h_spt0, y_spt, global_step, 'h_spt0')
+        self.plot(h_spt1, y_spt, global_step, 'h_spt1')
+        self.plot(h_qry0, y_qry, global_step, 'h_qry0')
+        self.plot(h_qry1, y_qry, global_step, 'h_qry1')
 
 
-    def plot(self, X, y, fig, title):
+    def plot(self, X, y, global_step, title):
         """
 
         :param X:
         :param y:
-        :param fig: figure id
+        :param global_step: global_step
         :param title:
         :return:
         """
@@ -69,7 +70,7 @@ class VisualH:
 
         plt.xticks([]), plt.yticks([])
         plt.title(title)
-        plt.savefig(title+'.eps', format='eps', dpi=1000)
+        plt.savefig(os.path.join('img',title+'_%d.eps'%global_step), format='eps', dpi=1000)
 
 
 

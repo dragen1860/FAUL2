@@ -2,8 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="543242f9-cc37-46fd-b752-21cae4eb5c80" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/metaae.py" beforeDir="false" afterPath="$PROJECT_DIR$/metaae.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mnist_train.py" beforeDir="false" afterPath="$PROJECT_DIR$/mnist_train.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/nohup.out" beforeDir="false" afterPath="$PROJECT_DIR$/nohup.out" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/visualization.py" beforeDir="false" afterPath="$PROJECT_DIR$/visualization.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -21,22 +24,22 @@
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="py" value="18" />
+          <entry key="py" value="21" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="Python" value="18" />
+          <entry key="Python" value="21" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="py" value="8768" />
+          <entry key="py" value="10271" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="Python" value="8768" />
+          <entry key="Python" value="10271" />
         </counts>
       </usages-collector>
     </session>
@@ -46,19 +49,28 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/metaae.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-425">
-              <caret line="274" column="8" selection-start-line="274" selection-start-column="8" selection-end-line="274" selection-end-column="8" />
+            <state relative-caret-position="-1459">
+              <caret line="329" column="41" selection-start-line="329" selection-start-column="41" selection-end-line="329" selection-end-column="41" />
               <folding>
                 <element signature="e#0#13#0" expanded="true" />
-                <marker date="1541579108074" expanded="true" signature="217:218" ph="..." />
-                <marker date="1541579108074" expanded="true" signature="217:223" ph="..." />
-                <marker date="1541579108074" expanded="true" signature="1669:2255" ph="..." />
-                <marker date="1541579108074" expanded="true" signature="4685:4691" ph="..." />
-                <marker date="1541579108074" expanded="true" signature="5304:12650" ph="..." />
-                <marker date="1541579108074" expanded="true" signature="8139:9678" ph="..." />
-                <marker date="1541579108074" expanded="true" signature="9739:9748" ph="..." />
-                <marker date="1541579108074" expanded="true" signature="12661:12729" ph="..." />
+                <marker date="1541591772320" expanded="true" signature="217:218" ph="..." />
+                <marker date="1541591772320" expanded="true" signature="217:223" ph="..." />
+                <marker date="1541591772320" expanded="true" signature="2189:2993" ph="..." />
+                <marker date="1541591772320" expanded="true" signature="5814:5820" ph="..." />
+                <marker date="1541591772320" expanded="true" signature="6433:13738" ph="..." />
+                <marker date="1541591772320" expanded="true" signature="9175:10766" ph="..." />
+                <marker date="1541591772320" expanded="true" signature="10827:10836" ph="..." />
+                <marker date="1541591772320" expanded="true" signature="13749:13817" ph="..." />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/torch/nn/init.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="301">
+              <caret line="197" column="27" selection-start-line="197" selection-start-column="27" selection-end-line="197" selection-end-column="27" />
             </state>
           </provider>
         </entry>
@@ -72,29 +84,24 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/classifier.py">
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/mnist_train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="132">
-              <caret line="6" lean-forward="true" selection-start-line="6" selection-end-line="6" />
+            <state relative-caret-position="662">
+              <caret line="53" column="42" lean-forward="true" selection-start-line="53" selection-start-column="42" selection-end-line="53" selection-end-column="42" />
               <folding>
-                <element signature="e#0#13#0" expanded="true" />
-                <marker date="1541571882148" expanded="true" signature="62:64" ph="..." />
-                <marker date="1541571882148" expanded="true" signature="62:70" ph="..." />
+                <element signature="e#0#16#0" expanded="true" />
+                <marker date="1541593916641" expanded="true" signature="428:2972" ph="..." />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/mnist_train.py">
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/visdom/__init__.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="616">
-              <caret line="54" lean-forward="true" selection-start-line="54" selection-end-line="54" />
-              <folding>
-                <element signature="e#0#16#0" expanded="true" />
-                <marker date="1541579814956" expanded="true" signature="268:2002" ph="..." />
-              </folding>
+            <state relative-caret-position="235">
+              <caret line="1136" column="8" selection-start-line="1136" selection-start-column="8" selection-end-line="1136" selection-end-column="8" />
             </state>
           </provider>
         </entry>
@@ -102,11 +109,11 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/visualization.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="389">
-              <caret line="34" column="35" lean-forward="true" selection-start-line="34" selection-start-column="35" selection-end-line="34" selection-end-column="35" />
+            <state relative-caret-position="550">
+              <caret line="61" column="41" lean-forward="true" selection-start-line="61" selection-start-column="41" selection-end-line="61" selection-end-column="41" />
               <folding>
-                <element signature="e#1#22#0" expanded="true" />
-                <marker date="1541579676950" expanded="true" signature="3410:4157" ph="..." />
+                <element signature="e#0#10#0" expanded="true" />
+                <marker date="1541593840299" expanded="true" signature="3626:4373" ph="..." />
               </folding>
             </state>
           </provider>
@@ -115,8 +122,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/matplotlib/pyplot.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="309">
-              <caret line="421" column="4" selection-start-line="421" selection-start-column="4" selection-end-line="421" selection-end-column="4" />
+            <state relative-caret-position="389">
+              <caret line="1612" column="6" selection-start-line="1612" selection-start-column="6" selection-end-line="1612" selection-end-column="6" />
             </state>
           </provider>
         </entry>
@@ -133,8 +140,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/mnistNShot.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="530">
-              <caret line="176" column="84" selection-start-line="176" selection-start-column="4" selection-end-line="176" selection-end-column="84" />
+            <state relative-caret-position="-682">
+              <caret line="32" column="45" selection-start-line="32" selection-start-column="45" selection-end-line="32" selection-end-column="45" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -143,10 +150,10 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/visdom/__init__.py">
+        <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/torch/functional.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="309">
-              <caret line="502" column="8" selection-start-line="502" selection-start-column="8" selection-end-line="502" selection-end-column="8" />
+              <caret line="273" column="4" selection-start-line="273" selection-start-column="4" selection-end-line="273" selection-end-column="4" />
             </state>
           </provider>
         </entry>
@@ -166,6 +173,7 @@
       <find>x_qry</find>
       <find>self.net</find>
       <find>self.learn</find>
+      <find>squeeze(</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -175,9 +183,9 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/fsmnist.py" />
-        <option value="$PROJECT_DIR$/mnistNShot.py" />
         <option value="$PROJECT_DIR$/classifier.py" />
         <option value="$PROJECT_DIR$/metaae.py" />
+        <option value="$PROJECT_DIR$/mnistNShot.py" />
         <option value="$PROJECT_DIR$/visualization.py" />
         <option value="$PROJECT_DIR$/mnist_train.py" />
       </list>
@@ -248,7 +256,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.mnistNShot">
+  <component name="RunManager" selected="Python.mnist_train">
     <configuration name="metaae" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="FAUL2" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -291,12 +299,35 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="mnist_train" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="FAUL2" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/mnist_train.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <list>
       <item itemvalue="Python.metaae" />
       <item itemvalue="Python.mnistNShot" />
+      <item itemvalue="Python.mnist_train" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.mnist_train" />
         <item itemvalue="Python.mnistNShot" />
         <item itemvalue="Python.metaae" />
       </list>
@@ -345,14 +376,9 @@
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/mnistNShot.py</url>
-          <line>57</line>
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/mnistNShot.py</url>
-          <line>124</line>
-          <option name="timeStamp" value="2" />
+          <url>file://$PROJECT_DIR$/metaae.py</url>
+          <line>364</line>
+          <option name="timeStamp" value="4" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
@@ -406,23 +432,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/visdom/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="309">
-          <caret line="502" column="8" selection-start-line="502" selection-start-column="8" selection-end-line="502" selection-end-column="8" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/mnistNShot.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="530">
-          <caret line="176" column="84" selection-start-line="176" selection-start-column="4" selection-end-line="176" selection-end-column="84" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/torch/__init__.py">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
@@ -445,13 +454,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/matplotlib/pyplot.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="309">
-          <caret line="421" column="4" selection-start-line="421" selection-start-column="4" selection-end-line="421" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/torch/nn/functional.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="309">
@@ -466,42 +468,80 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/visualization.py">
+    <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/torch/nn/init.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="301">
+          <caret line="197" column="27" selection-start-line="197" selection-start-column="27" selection-end-line="197" selection-end-column="27" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/torch/functional.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="309">
+          <caret line="273" column="4" selection-start-line="273" selection-start-column="4" selection-end-line="273" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/visdom/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="235">
+          <caret line="1136" column="8" selection-start-line="1136" selection-start-column="8" selection-end-line="1136" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/matplotlib/pyplot.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="389">
-          <caret line="34" column="35" lean-forward="true" selection-start-line="34" selection-start-column="35" selection-end-line="34" selection-end-column="35" />
+          <caret line="1612" column="6" selection-start-line="1612" selection-start-column="6" selection-end-line="1612" selection-end-column="6" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/mnistNShot.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-682">
+          <caret line="32" column="45" selection-start-line="32" selection-start-column="45" selection-end-line="32" selection-end-column="45" />
           <folding>
-            <element signature="e#1#22#0" expanded="true" />
-            <marker date="1541579676950" expanded="true" signature="3410:4157" ph="..." />
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/visualization.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="550">
+          <caret line="61" column="41" lean-forward="true" selection-start-line="61" selection-start-column="41" selection-end-line="61" selection-end-column="41" />
+          <folding>
+            <element signature="e#0#10#0" expanded="true" />
+            <marker date="1541593840299" expanded="true" signature="3626:4373" ph="..." />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/metaae.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-425">
-          <caret line="274" column="8" selection-start-line="274" selection-start-column="8" selection-end-line="274" selection-end-column="8" />
+        <state relative-caret-position="-1459">
+          <caret line="329" column="41" selection-start-line="329" selection-start-column="41" selection-end-line="329" selection-end-column="41" />
           <folding>
             <element signature="e#0#13#0" expanded="true" />
-            <marker date="1541579108074" expanded="true" signature="217:218" ph="..." />
-            <marker date="1541579108074" expanded="true" signature="217:223" ph="..." />
-            <marker date="1541579108074" expanded="true" signature="1669:2255" ph="..." />
-            <marker date="1541579108074" expanded="true" signature="4685:4691" ph="..." />
-            <marker date="1541579108074" expanded="true" signature="5304:12650" ph="..." />
-            <marker date="1541579108074" expanded="true" signature="8139:9678" ph="..." />
-            <marker date="1541579108074" expanded="true" signature="9739:9748" ph="..." />
-            <marker date="1541579108074" expanded="true" signature="12661:12729" ph="..." />
+            <marker date="1541591772320" expanded="true" signature="217:218" ph="..." />
+            <marker date="1541591772320" expanded="true" signature="217:223" ph="..." />
+            <marker date="1541591772320" expanded="true" signature="2189:2993" ph="..." />
+            <marker date="1541591772320" expanded="true" signature="5814:5820" ph="..." />
+            <marker date="1541591772320" expanded="true" signature="6433:13738" ph="..." />
+            <marker date="1541591772320" expanded="true" signature="9175:10766" ph="..." />
+            <marker date="1541591772320" expanded="true" signature="10827:10836" ph="..." />
+            <marker date="1541591772320" expanded="true" signature="13749:13817" ph="..." />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/mnist_train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="616">
-          <caret line="54" lean-forward="true" selection-start-line="54" selection-end-line="54" />
+        <state relative-caret-position="662">
+          <caret line="53" column="42" lean-forward="true" selection-start-line="53" selection-start-column="42" selection-end-line="53" selection-end-column="42" />
           <folding>
             <element signature="e#0#16#0" expanded="true" />
-            <marker date="1541579814956" expanded="true" signature="268:2002" ph="..." />
+            <marker date="1541593916641" expanded="true" signature="428:2972" ph="..." />
           </folding>
         </state>
       </provider>
