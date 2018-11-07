@@ -1,12 +1,14 @@
-import torch
-from torch import nn
-from torch import optim
-from torch.nn import functional as F
+import  torch
+from    torch import nn
+from    torch import optim
+from    torch.nn import functional as F
+from    torch.utils.data import TensorDataset, DataLoader
+from    torch import optim
 
 
 class Learner(nn.Module):
 
-    def __init__(self):
+    def __init__(self, imgsz=32, imgc = 1):
         super(Learner, self).__init__()
 
         self.config = [
@@ -14,7 +16,7 @@ class Learner(nn.Module):
             ('conv2d', [16, 16, 3, 3]),
             ('conv2d', [16, 16, 3, 3]),
             ('conv2d', [8, 16, 3, 3]),
-
+            ('hidden', []), # hidden variable
             ('conv2d', [16, 8, 3, 3]),
             ('conv2d', [16, 16, 3, 3]),
             ('conv2d', [16, 16, 3, 3]),
@@ -31,16 +33,28 @@ class Learner(nn.Module):
                 # [ch_out]
                 self.vars.append(nn.Parameter(torch.zeros(param[0])))
 
+            elif name is 'hidden':
+                continue
+
             elif name is 'linear':
                 raise NotImplementedError
             else:
                 raise NotImplementedError
+
+        h = self.forward_encoder(torch.Tensor(2, imgc, imgsz, imgsz))
+        print('hidden:', h.shape)
+        _, self.h_c, self.h_d, _ = h.shape
+
 
     def extra_repr(self):
         info = ''
 
         for name, param in self.config:
             if name is 'conv2d':
+                tmp = name + ':' + str(tuple(param))
+                info += tmp + '\n'
+
+            elif name is 'hidden':
                 tmp = name + ':' + str(tuple(param))
                 info += tmp + '\n'
             elif name is 'linear':
@@ -50,7 +64,7 @@ class Learner(nn.Module):
 
         return info
 
-    def forward(self, x, vars):
+    def forward(self, x, vars=None):
 
         if vars is None:
             vars = self.vars
@@ -63,6 +77,8 @@ class Learner(nn.Module):
                 x = F.conv2d(x, w, b, stride=1, padding=0)
                 idx += 2
 
+            elif name is 'hidden':
+                continue
 
             elif name is 'linear':
                 raise NotImplementedError
@@ -71,6 +87,77 @@ class Learner(nn.Module):
 
         # make sure variable is used properly
         assert idx == len(self.vars)
+
+        return x
+
+    def forward_encoder(self, x, vars=None):
+        """
+        forward till hidden layer
+        :param x:
+        :param vars:
+        :return:
+        """
+        if vars is None:
+            vars = self.vars
+
+        idx = 0
+
+        for name, param in self.config:
+            if name is 'conv2d':
+                w, b = vars[idx:(idx + 2)]
+                x = F.conv2d(x, w, b, stride=1, padding=0)
+                idx += 2
+
+            elif name is 'hidden':
+
+                break
+
+            elif name is 'linear':
+                raise NotImplementedError
+            else:
+                raise NotImplementedError
+
+
+        return x
+
+    def forward_decoder(self, h, vars=None):
+        """
+        forward after hidden layer
+        :param x:
+        :param vars:
+        :return:
+        """
+        if vars is None:
+            vars = self.vars
+
+
+        hidden_loc = 0
+        for name, param in self.config:
+             if name is not 'hidden':
+                 hidden_loc += 1
+
+        if hidden_loc == len(self.config):
+            raise NotImplementedError
+
+        # get decoder network config
+        decoder_config = self.config[hidden_loc+1:]
+
+
+        idx = 0
+        x = h
+        for name, param in decoder_config:
+            if name is 'conv2d':
+                w, b = vars[idx:(idx + 2)]
+                x = F.conv2d(x, w, b, stride=1, padding=0)
+                idx += 2
+
+            elif name is 'hidden':
+                raise NotImplementedError
+            elif name is 'linear':
+                raise NotImplementedError
+            else:
+                raise NotImplementedError
+
 
         return x
 
@@ -118,7 +205,115 @@ class MetaLearner(nn.Module):
         self.criteon = nn.MSELoss()
         self.meta_optim = optim.Adam(self.learner.parameters(), lr=self.meta_lr)
 
-    def forward(self, x_spt, y_spt, x_qry, y_qry, training):
+        # hidden to n_way
+        self.classifier = nn.Sequential(nn.Linear(self.learner.h_d**2 * self.learner.h_c, self.n_way))
+
+    def predict(self, x_spt, y_spt, x_qry, y_qry):
+        """
+
+        :param x_spt: [task_num, sptsz, c_, h, w]
+        :param y_spt: [task_num, sptsz]
+        :param x_qry:
+        :param y_qry:
+        :return:
+        """
+        batchsz, sptsz, c_, h, w = x_spt.size()
+        qrysz = x_qry.size(1)
+        assert batchsz is 1
+        assert x_qry.size(0) is 1
+        x_spt, y_spt, x_qry, y_qry = x_spt.squeeze(0), y_spt.squeeze(0), x_qry.squeeze(0), y_qry.squeeze(0)
+
+        # use theta to forward
+        pred = self.learner(x_spt)
+        loss = self.criteon(pred, x_spt)
+
+        # 2. grad on theta
+        # clear theta grad info
+        self.learner.zero_grad()
+        grad = torch.autograd.grad(loss, self.learner.parameters())
+
+
+        # 3. theta_pi = theta - train_lr * grad
+        fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, self.learner.parameters())))
+
+        # this is the loss and accuracy before first update
+        # [setsz, nway]
+        pred_q = self.learner(x_qry, self.net.parameters())
+
+        # this is the loss and accuracy after the first update
+        # [setsz, nway]
+        pred_q = self.learner(x_qry, fast_weights)
+        loss_q = self.criteon(pred_q, x_qry)
+
+        for k in range(1, self.update_num):
+            # 1. run the i-th task and compute loss for k=1~K-1
+            pred = self.net(x_spt, fast_weights)
+            loss = self.criteon(pred, x_spt)
+            # clear fast_weights grad info
+            self.net.zero_grad(fast_weights)
+            # 2. compute grad on theta_pi
+            grad = torch.autograd.grad(loss, fast_weights)
+            # 3. theta_pi = theta_pi - train_lr * grad
+            fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, fast_weights)))
+
+            pred_q = self.net(x_qry, fast_weights)
+            loss_q = self.criteon(pred_q, x_qry)
+
+    def classify_train(self, x_train, y_train, x_test, y_test, batchsz=32, train_step=100):
+        """
+
+        :param x_train: [b, c_, h, w]
+        :param y_train: [b]
+        :param x_test:
+        :param y_test:
+        :param batchsz: batchsz for classifier
+        :param train_step: training steps for classifier
+        :return:
+        """
+        # TODO: init classifier firstly
+
+        criteon = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(self.classifier.parameters(), lr=1e-3)
+
+        # stop gradient on hidden layer
+        # [b, h_c, h_d, h_d]
+        x_train = self.learner.forward_encoder(x_train).detach()
+        x_test = self.learner.forward_encoder(x_test).detach()
+        y_train, y_test = y_train.detach(), y_test.detach()
+
+        db_train = DataLoader(TensorDataset(x_train, y_train), batch_size=batchsz, shuffle=True)
+        db_test = DataLoader(TensorDataset(x_test, y_test), batch_size=batchsz, shuffle=True)
+
+        for epoch in range(train_step):
+            for x, y in db_train:
+                # flatten
+                x = x.view(x.size(0), -1)
+                logits = self.classifier(x)
+                loss = criteon(logits, y)
+
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+
+        correct, total = 0, 0
+        for x, y in db_test:
+            # flatten
+            x = x.view(x.size(0), -1)
+            logits = self.classifier(x)
+            pred = logits.argmax(dim=1)
+            correct += torch.eq(pred, y).sum().item()
+            total += x.size(0)
+
+        acc = correct / total
+
+        return acc
+
+
+
+
+
+    def forward(self, x_spt, y_spt, x_qry, y_qry, training=True):
         """
 
         :param x_spt: [task_num, setsz, c_, h, w]
@@ -133,7 +328,6 @@ class MetaLearner(nn.Module):
         qrysz = x_qry.size(1)
 
         losses_q = []  # losses_q[i], i is tasks idx
-        corrects = [0] * (self.K + 1)  # corrects[i] save cumulative correct number of all tasks in step k
 
         # TODO: add multi-threading support
         # NOTICE: although the GIL limit the multi-threading performance severely, it does make a difference.
@@ -194,6 +388,9 @@ class MetaLearner(nn.Module):
         # for p in self.net.parameters()[:5]:
         # 	print(torch.norm(p).item())
         self.meta_optim.step()
+
+        return loss_q
+
 
 
 def main():
