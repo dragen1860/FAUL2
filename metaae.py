@@ -12,15 +12,16 @@ class Learner(nn.Module):
         super(Learner, self).__init__()
 
         self.config = [
-            ('conv2d', [16, 1, 1, 1]),
-            ('conv2d', [16, 16, 3, 3]),
-            ('conv2d', [16, 16, 3, 3]),
-            ('conv2d', [8, 16, 3, 3]),
+            # [c_out, c_in, kernelsz, kernelsz, stride, padding]
+            ('conv2d', [16, 1, 1, 1, 1, 1]),
+            ('conv2d', [16, 16, 3, 3, 1, 0]),
+            ('conv2d', [16, 16, 3, 3, 1, 1]),
+            ('conv2d', [8, 16, 3, 3, 1, 1]),
             ('hidden', []), # hidden variable
-            ('conv2d', [16, 8, 3, 3]),
-            ('conv2d', [16, 16, 3, 3]),
-            ('conv2d', [16, 16, 3, 3]),
-            ('conv2d', [1, 16, 3, 3])
+            ('conv2d', [16, 8, 3, 3, 1, 1]),
+            ('conv2d', [16, 16, 3, 3, 1, 1]),
+            ('conv2d', [16, 16, 3, 3, 1, 1]),
+            ('conv2d', [1, 16, 3, 3, 1, 1])
         ]
 
         # this dict contains all tensors needed to be optimized
@@ -29,7 +30,7 @@ class Learner(nn.Module):
         for name, param in self.config:
             if name is 'conv2d':
                 # [ch_out, ch_in, kernelsz, kernelsz]
-                self.vars.append(nn.Parameter(torch.ones(*param)))
+                self.vars.append(nn.Parameter(torch.ones(*param[:4])))
                 # [ch_out]
                 self.vars.append(nn.Parameter(torch.zeros(param[0])))
 
@@ -42,7 +43,8 @@ class Learner(nn.Module):
                 raise NotImplementedError
 
         h = self.forward_encoder(torch.Tensor(2, imgc, imgsz, imgsz))
-        print('hidden:', h.shape)
+        out = self.forward(torch.Tensor(2, imgc, imgsz, imgsz))
+        print('hidden:', h.shape, 'out:', out.shape)
         _, self.h_c, self.h_d, _ = h.shape
 
 
@@ -51,7 +53,8 @@ class Learner(nn.Module):
 
         for name, param in self.config:
             if name is 'conv2d':
-                tmp = name + ':' + str(tuple(param))
+                tmp = 'conv2d:(ch_out:%d, ch_in:%d, k:%dx%d, stride:%d, padding:%d)'\
+                      %(param[0], param[1], param[2], param[3], param[4], param[5],)
                 info += tmp + '\n'
 
             elif name is 'hidden':
@@ -74,9 +77,10 @@ class Learner(nn.Module):
         for name, param in self.config:
             if name is 'conv2d':
                 w, b = vars[idx:(idx + 2)]
-                x = F.conv2d(x, w, b, stride=1, padding=0)
+                # remember to keep synchrozied of forward_encoder and forward_decoder!
+                x = F.conv2d(x, w, b, stride=param[4], padding=param[5])
                 idx += 2
-
+                # print(name, param, '\tout:', x.shape)
             elif name is 'hidden':
                 continue
 
@@ -105,7 +109,7 @@ class Learner(nn.Module):
         for name, param in self.config:
             if name is 'conv2d':
                 w, b = vars[idx:(idx + 2)]
-                x = F.conv2d(x, w, b, stride=1, padding=0)
+                x = F.conv2d(x, w, b, stride=param[4], padding=param[5])
                 idx += 2
 
             elif name is 'hidden':
@@ -148,7 +152,7 @@ class Learner(nn.Module):
         for name, param in decoder_config:
             if name is 'conv2d':
                 w, b = vars[idx:(idx + 2)]
-                x = F.conv2d(x, w, b, stride=1, padding=0)
+                x = F.conv2d(x, w, b, stride=param[4], padding=param[5])
                 idx += 2
 
             elif name is 'hidden':
@@ -176,6 +180,13 @@ class Learner(nn.Module):
                 for p in vars:
                     if p.grad is not None:
                         p.grad.zero_()
+
+    def parameters(self):
+        """
+        override this function since initial parameters will return with a generator.
+        :return:
+        """
+        return self.vars
 
 
 class MetaLearner(nn.Module):
@@ -208,7 +219,9 @@ class MetaLearner(nn.Module):
         # hidden to n_way
         self.classifier = nn.Sequential(nn.Linear(self.learner.h_d**2 * self.learner.h_c, self.n_way))
 
-    def predict(self, x_spt, y_spt, x_qry, y_qry):
+        print(self.learner)
+
+    def finetuning(self, x_spt, y_spt, x_qry, y_qry):
         """
 
         :param x_spt: [task_num, sptsz, c_, h, w]
@@ -232,32 +245,32 @@ class MetaLearner(nn.Module):
         self.learner.zero_grad()
         grad = torch.autograd.grad(loss, self.learner.parameters())
 
-
         # 3. theta_pi = theta - train_lr * grad
         fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, self.learner.parameters())))
 
-        # this is the loss and accuracy before first update
-        # [setsz, nway]
-        pred_q = self.learner(x_qry, self.net.parameters())
 
-        # this is the loss and accuracy after the first update
-        # [setsz, nway]
-        pred_q = self.learner(x_qry, fast_weights)
-        loss_q = self.criteon(pred_q, x_qry)
-
+        # 4. continue to update
         for k in range(1, self.update_num):
             # 1. run the i-th task and compute loss for k=1~K-1
-            pred = self.net(x_spt, fast_weights)
+            pred = self.learner(x_spt, fast_weights)
             loss = self.criteon(pred, x_spt)
             # clear fast_weights grad info
-            self.net.zero_grad(fast_weights)
+            self.learner.zero_grad(fast_weights)
             # 2. compute grad on theta_pi
             grad = torch.autograd.grad(loss, fast_weights)
             # 3. theta_pi = theta_pi - train_lr * grad
             fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, fast_weights)))
 
-            pred_q = self.net(x_qry, fast_weights)
-            loss_q = self.criteon(pred_q, x_qry)
+
+        # TODO:
+        with torch.no_grad():
+            # 5. acquire representation
+            h_spt0 = self.learner.forward_encoder(x_spt)
+            h_spt1 = self.learner.forward_encoder(x_spt, fast_weights)
+            h_qry0 = self.learner.forward_encoder(x_qry)
+            h_qry1 = self.learner.forward_encoder(x_qry, fast_weights)
+
+        return h_spt0, h_spt1, h_qry0, h_qry1
 
     def classify_train(self, x_train, y_train, x_test, y_test, batchsz=32, train_step=100):
         """
@@ -354,7 +367,7 @@ class MetaLearner(nn.Module):
 
             # this is the loss and accuracy before first update
             # [setsz, nway]
-            pred_q = self.learner(x_qry[i], self.net.parameters())
+            pred_q = self.learner(x_qry[i], self.learner.parameters())
 
             # this is the loss and accuracy after the first update
             # [setsz, nway]
@@ -363,16 +376,16 @@ class MetaLearner(nn.Module):
 
             for k in range(1, self.update_num):
                 # 1. run the i-th task and compute loss for k=1~K-1
-                pred = self.net(x_spt[i], fast_weights)
+                pred = self.learner(x_spt[i], fast_weights)
                 loss = self.criteon(pred, x_spt[i])
                 # clear fast_weights grad info
-                self.net.zero_grad(fast_weights)
+                self.learner.zero_grad(fast_weights)
                 # 2. compute grad on theta_pi
                 grad = torch.autograd.grad(loss, fast_weights)
                 # 3. theta_pi = theta_pi - train_lr * grad
                 fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, fast_weights)))
 
-                pred_q = self.net(x_qry[i], fast_weights)
+                pred_q = self.learner(x_qry[i], fast_weights)
                 loss_q = self.criteon(pred_q, x_qry[i])
 
             # 4. record last step's loss for task i
@@ -385,7 +398,7 @@ class MetaLearner(nn.Module):
         self.meta_optim.zero_grad()
         loss_q.backward()
         # print('meta update')
-        # for p in self.net.parameters()[:5]:
+        # for p in self.learner.parameters()[:5]:
         # 	print(torch.norm(p).item())
         self.meta_optim.step()
 

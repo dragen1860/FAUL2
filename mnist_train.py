@@ -5,7 +5,7 @@ from    torch.utils.data import DataLoader
 from    metaae import MetaLearner
 from    mnistNShot import MnistNShot
 
-
+from    visualization import VisualH
 
 
 
@@ -23,12 +23,11 @@ def main(args):
     net = MetaLearner(args.n_way, args.k_spt, args.k_qry, args.task_num, args.update_num, args.meta_lr, args.update_lr)
     net.to(device)
 
-    db_test = DataLoader(MnistNShot('db/mnist', training=False, n_way=5, k_spt=1, k_qry=15, imgsz=32, episode_num=1000),
-                          batch_size= args.task_num, shuffle=True)
+
+    visualh = VisualH()
 
 
-
-    for epoch in range(100):
+    for epoch in range(1000):
 
         db_train = DataLoader(
             MnistNShot('db/mnist', training=True, n_way=5, k_spt=1, k_qry=15, imgsz=32, episode_num=10000),
@@ -38,8 +37,32 @@ def main(args):
 
             spt_x, spt_y, qry_x, qry_y = spt_x.to(device), spt_y.to(device), qry_x.to(device), qry_y.to(device)
 
-            net(spt_x, spt_y, qry_x, qry_y)
+            qry_loss = net(spt_x, spt_y, qry_x, qry_y)
 
+            print(qry_loss.item())
+
+        db_test = DataLoader(
+            MnistNShot('db/mnist', training=False, n_way=5, k_spt=1, k_qry=15, imgsz=32, episode_num=1000),
+            batch_size=1, shuffle=True)
+
+        for batchidx, (spt_x, spt_y, qry_x, qry_y) in enumerate(db_test):
+
+            spt_x, spt_y, qry_x, qry_y = spt_x.to(device), spt_y.to(device), qry_x.to(device), qry_y.to(device)
+
+            h_spt0, h_spt1, h_qry0, h_qry1 = net.finetuning(spt_x, spt_y, qry_x, qry_y)
+
+            visualh.update(h_spt0, h_spt1, h_qry0, h_qry1, spt_y, qry_y)
+
+            acc0 = net.classify_train(h_spt0, spt_y, h_qry0, qry_y)
+            acc1 = net.classify_train(h_spt1, spt_y, h_qry1, qry_y)
+            print('classifcation:', acc0, acc1)
+
+        # # keep episode_num = batch_size for classification.
+        # db_test = DataLoader(
+        #     MnistNShot('db/mnist', training=False, n_way=5, k_spt=1, k_qry=15, imgsz=32, episode_num=1000),
+        #     batch_size=1000, shuffle=True)
+        # spt_x, spt_y, qry_x, qry_y = iter(db_test).next()
+        # net.classify_train()
 
 
 
