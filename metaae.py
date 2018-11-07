@@ -1,10 +1,7 @@
-import  torch
-from    torch import nn
-from    torch import optim
-from    torch.nn import functional as F
-from    collections import OrderedDict
-
-
+import torch
+from torch import nn
+from torch import optim
+from torch.nn import functional as F
 
 
 class Learner(nn.Module):
@@ -13,7 +10,7 @@ class Learner(nn.Module):
         super(Learner, self).__init__()
 
         self.config = [
-            ('conv2d', [16, 1,  1, 1]),
+            ('conv2d', [16, 1, 1, 1]),
             ('conv2d', [16, 16, 3, 3]),
             ('conv2d', [16, 16, 3, 3]),
             ('conv2d', [8, 16, 3, 3]),
@@ -39,13 +36,12 @@ class Learner(nn.Module):
             else:
                 raise NotImplementedError
 
-
     def extra_repr(self):
         info = ''
 
         for name, param in self.config:
             if name is 'conv2d':
-                tmp = name + ':' +str(param)
+                tmp = name + ':' + str(tuple(param))
                 info += tmp + '\n'
             elif name is 'linear':
                 raise NotImplementedError
@@ -63,7 +59,7 @@ class Learner(nn.Module):
 
         for name, param in self.config:
             if name is 'conv2d':
-                w, b = vars[idx:(idx+2)]
+                w, b = vars[idx:(idx + 2)]
                 x = F.conv2d(x, w, b, stride=1, padding=0)
                 idx += 2
 
@@ -73,10 +69,12 @@ class Learner(nn.Module):
             else:
                 raise NotImplementedError
 
+        # make sure variable is used properly
+        assert idx == len(self.vars)
 
         return x
 
-    def zero_grad(self, vars):
+    def zero_grad(self, vars=None):
         """
 
         :param vars:
@@ -91,7 +89,6 @@ class Learner(nn.Module):
                 for p in vars:
                     if p.grad is not None:
                         p.grad.zero_()
-
 
 
 class MetaLearner(nn.Module):
@@ -117,11 +114,9 @@ class MetaLearner(nn.Module):
         self.task_num = task_num
         self.update_num = update_num
 
-
         self.learner = Learner()
         self.criteon = nn.MSELoss()
         self.meta_optim = optim.Adam(self.learner.parameters(), lr=self.meta_lr)
-
 
     def forward(self, x_spt, y_spt, x_qry, y_qry, training):
         """
@@ -172,7 +167,6 @@ class MetaLearner(nn.Module):
             pred_q = self.learner(x_qry[i], fast_weights)
             loss_q = self.criteon(pred_q, x_qry[i])
 
-
             for k in range(1, self.update_num):
                 # 1. run the i-th task and compute loss for k=1~K-1
                 pred = self.net(x_spt[i], fast_weights)
@@ -194,7 +188,6 @@ class MetaLearner(nn.Module):
         # sum over all losses across all tasks
         loss_q = torch.stack(losses_q).sum(0)
 
-
         self.meta_optim.zero_grad()
         loss_q.backward()
         # print('meta update')
@@ -204,11 +197,8 @@ class MetaLearner(nn.Module):
 
 
 def main():
-
-
-    model = Model()
-    print(model)
-
+    net = MetaLearner(5, 1, 15, 8, 5, 1e-3, 0.05)
+    print(net)
 
 
 if __name__ == '__main__':
