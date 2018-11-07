@@ -74,7 +74,7 @@ def main(args):
 
             acc0 = net.classify_train(h_spt0, spt_y, h_qry0, qry_y, use_h=True)
             acc1 = net.classify_train(h_spt1, spt_y, h_qry1, qry_y, use_h=True)
-            print(batchidx, 'classification:', acc0, acc1)
+            print(batchidx, 'classification:\n', acc0, '\n', acc1)
 
             break
 

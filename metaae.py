@@ -246,6 +246,18 @@ class MetaLearner(nn.Module):
 
         print(self.learner)
 
+    def classify_reset(self):
+
+        def weights_init(m):
+            if isinstance(m, nn.Linear):
+                torch.nn.init.constant_(m.weight, 1)
+                torch.nn.init.constant_(m.bias, 0.001)
+                print('reseted.', m.weight.shape, m.__class__.__name__)
+
+        for m in self.classifier.modules():
+            m.apply(weights_init)
+
+
     def finetuning(self, x_spt, y_spt, x_qry, y_qry):
         """
 
@@ -296,7 +308,7 @@ class MetaLearner(nn.Module):
 
         return h_spt0, h_spt1, h_qry0, h_qry1
 
-    def classify_train(self, x_train, y_train, x_test, y_test, use_h=True, batchsz=32, train_step=40):
+    def classify_train(self, x_train, y_train, x_test, y_test, use_h=True, batchsz=32, train_step=50):
         """
 
         :param x_train: [b, c_, h, w]
@@ -308,9 +320,10 @@ class MetaLearner(nn.Module):
         :return:
         """
         # TODO: init classifier firstly
+        self.classify_reset()
 
         criteon = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(self.classifier.parameters(), lr=1e-3)
+        optimizer = optim.Adam(self.classifier.parameters(), lr=1e-4)
 
         if not use_h: # given image
             # stop gradient on hidden layer
