@@ -247,12 +247,11 @@ class MetaLearner(nn.Module):
         print(self.learner)
 
     def classify_reset(self):
-
         def weights_init(m):
             if isinstance(m, nn.Linear):
                 torch.nn.init.constant_(m.weight, 1)
                 torch.nn.init.constant_(m.bias, 0.001)
-                print('reseted.', m.weight.shape, m.__class__.__name__)
+                # print('reseted.', m.weight.shape, m.__class__.__name__)
 
         for m in self.classifier.modules():
             m.apply(weights_init)
