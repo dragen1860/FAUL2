@@ -66,7 +66,8 @@ class VisualH:
             # for each point
             # y should range from 1 ~ K
             X, y = torch.from_numpy(X), torch.from_numpy(y) + 1
-            self.vis.scatter(X, y, win=title, opts=dict(markersize=7))
+            self.vis.scatter(X, y, win=title, opts=dict(markersize=6, title=title))
+
             return
 
         # use matplotlib to render
