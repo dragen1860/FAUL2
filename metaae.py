@@ -296,7 +296,7 @@ class MetaLearner(nn.Module):
 
         return h_spt0, h_spt1, h_qry0, h_qry1
 
-    def classify_train(self, x_train, y_train, x_test, y_test, use_h=True, batchsz=32, train_step=100):
+    def classify_train(self, x_train, y_train, x_test, y_test, use_h=True, batchsz=32, train_step=40):
         """
 
         :param x_train: [b, c_, h, w]
