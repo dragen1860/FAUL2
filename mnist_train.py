@@ -56,7 +56,7 @@ def main(args):
 
         # clustering, visualization and classification
         db_test = DataLoader(
-            MnistNShot('db/mnist', training=False, n_way=5, k_spt=1, k_qry=45, imgsz=32, episode_num=100),
+            MnistNShot('db/mnist', training=False, n_way=5, k_spt=5, k_qry=45, imgsz=32, episode_num=100),
             batch_size=1, shuffle=True)
 
         for batchidx, (spt_x, spt_y, qry_x, qry_y) in enumerate(db_test):
@@ -72,8 +72,8 @@ def main(args):
 
 
 
-            acc0 = net.classify_train(h_spt0, spt_y, h_qry0, qry_y)
-            acc1 = net.classify_train(h_spt1, spt_y, h_qry1, qry_y)
+            acc0 = net.classify_train(h_spt0, spt_y, h_qry0, qry_y, use_h=True)
+            acc1 = net.classify_train(h_spt1, spt_y, h_qry1, qry_y, use_h=True)
             print(batchidx, 'classification:', acc0, acc1)
 
             break

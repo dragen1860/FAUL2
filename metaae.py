@@ -4,7 +4,7 @@ from    torch import optim
 from    torch.nn import functional as F
 from    torch.utils.data import TensorDataset, DataLoader
 from    torch import optim
-
+import  numpy as np
 
 class Learner(nn.Module):
 
@@ -319,9 +319,18 @@ class MetaLearner(nn.Module):
             x_test = self.learner.forward_encoder(x_test).detach()
         y_train, y_test = y_train.detach(), y_test.detach()
 
-        db_train = DataLoader(TensorDataset(x_train, y_train), batch_size=batchsz, shuffle=True)
-        db_test = DataLoader(TensorDataset(x_test, y_test), batch_size=batchsz, shuffle=True)
+        # merge all and re-splitting
+        x = torch.cat([x_train, x_test], dim=0)
+        y = torch.cat([y_train, y_test], dim=0)
+        db = TensorDataset(x, y)
+        train_size = int(0.6 * x.size(0))
+        test_size = x.size(0) - train_size
+        db_train_, db_test_ = torch.utils.data.random_split(db, [train_size, test_size])
 
+        db_train = DataLoader(db_train_, batch_size=batchsz, shuffle=True)
+        db_test = DataLoader(db_test_, batch_size=batchsz, shuffle=True)
+
+        accs = np.zeros(train_step)
         for epoch in range(train_step):
             for x, y in db_train:
                 # flatten
@@ -334,18 +343,19 @@ class MetaLearner(nn.Module):
                 optimizer.step()
 
 
-        correct, total = 0, 0
-        for x, y in db_test:
-            # flatten
-            x = x.view(x.size(0), -1)
-            logits = self.classifier(x)
-            pred = logits.argmax(dim=1)
-            correct += torch.eq(pred, y).sum().item()
-            total += x.size(0)
+            correct, total = 0, 0
+            for x, y in db_test:
+                # flatten
+                x = x.view(x.size(0), -1)
+                logits = self.classifier(x)
+                pred = logits.argmax(dim=1)
+                correct += torch.eq(pred, y).sum().item()
+                total += x.size(0)
 
-        acc = correct / total
+            acc = correct / total
+            accs[epoch] = acc
 
-        return acc
+        return accs
 
 
 
