@@ -28,8 +28,8 @@ def main(args):
     net.to(device)
 
 
-    visualh = VisualH()
     vis = visdom.Visdom()
+    visualh = VisualH(vis)
     global_step = 0
     vis.line([1], [0], win='qry_loss', opts={'title': 'qry_loss'})
 

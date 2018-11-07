@@ -1,6 +1,6 @@
 import  os
 from    time import time
-
+import  torch
 import  numpy as np
 import  matplotlib.pyplot as plt
 from    matplotlib import offsetbox
@@ -10,9 +10,9 @@ from    sklearn import manifold, datasets, decomposition
 
 class VisualH:
 
-    def __init__(self):
+    def __init__(self, vis=None):
 
-        # plt.ion()
+        self.vis = vis
 
         self.tsne = manifold.TSNE(n_components=2, init='pca', random_state=0)
 
@@ -61,6 +61,15 @@ class VisualH:
         x_min, x_max = np.min(X, 0), np.max(X, 0)
         X = (X - x_min) / (x_max - x_min)
 
+        # use visdom to render
+        if self.vis is not None:
+            # for each point
+            # y should range from 1 ~ K
+            X, y = torch.from_numpy(X), torch.from_numpy(y) + 1
+            self.vis.scatter(X, y, win=title, opts=dict(markersize=7))
+            return
+
+        # use matplotlib to render
         plt.figure()
         # for each point
         for i in range(X.shape[0]):

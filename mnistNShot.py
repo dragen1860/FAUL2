@@ -33,8 +33,8 @@ class MnistNShot(Dataset):
         self.qrysz = self.n_way * self.k_qry  # number of samples per set for evaluation
         self.imgsz = imgsz  # resize to
         self.episode_num = episode_num
-        print('shuffle %s DB: %d-way, %d-shot, %d-query, resize:%d episode num:%d' %
-              ('train' if training else 'test', n_way, k_spt, k_qry, imgsz, episode_num))
+        # print('shuffle %s DB: %d-way, %d-shot, %d-query, resize:%d episode num:%d' %
+        #       ('train' if training else 'test', n_way, k_spt, k_qry, imgsz, episode_num))
 
         if training:
             self.transform = transforms.Compose([
@@ -74,7 +74,7 @@ class MnistNShot(Dataset):
             data[label_].append(x_)
 
         num_len = list(map(lambda x: len(x), data))
-        print('mnist class num:', num_len)
+        # print('mnist class num:', num_len)
 
         if training:
             self.mode_numbers = np.array([0, 1, 2, 3, 4])
