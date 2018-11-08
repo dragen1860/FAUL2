@@ -45,6 +45,8 @@ class AE(nn.Module):
             nn.Tanh()
         )
 
+
+
         self.criteon = nn.MSELoss()
 
         h = self.encoder(torch.Tensor(2, imgc, imgsz, imgsz))
@@ -145,6 +147,7 @@ class AE(nn.Module):
         #     print(id(v0), id(v1))
         #     print(v0.norm(p=1), v1.norm(p=1))
         self.load_state_dict(theta)
+
 
 
         return h_spt0, h_spt1, h_qry0, h_qry1

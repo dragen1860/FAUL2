@@ -11,28 +11,80 @@ class Learner(nn.Module):
     def __init__(self, imgsz=32, imgc = 1):
         super(Learner, self).__init__()
 
-        self.config = [
-            # conv2d:[c_out, c_in, kernelsz, kernelsz, stride, padding]
-            # pool2d:[kernelsz, stride, padding]
-            # upsample:[factor]
-            ('conv2d', [16, 1, 1, 1, 1, 1]), # the first
+        # self.encoder = nn.Sequential(
+        #     nn.Conv2d(1, 16, 3, stride=3, padding=1),  # b, 16, 10, 10
+        #     nn.ReLU(True),
+        #     nn.MaxPool2d(2, stride=2),  # b, 16, 5, 5
+        #     nn.Conv2d(16, 8, 3, stride=2, padding=1),  # b, 8, 3, 3
+        #     nn.ReLU(True),
+        #     nn.MaxPool2d(2, stride=1)  # b, 8, 2, 2
+        # )
+        #
+        # self.decoder = nn.Sequential(
+        #     nn.ConvTranspose2d(8, 16, 3, stride=2),  # b, 16, 5, 5
+        #     nn.ReLU(True),
+        #     nn.ConvTranspose2d(16, 8, 5, stride=3, padding=1),  # b, 8, 15, 15
+        #     nn.ReLU(True),
+        #     nn.ConvTranspose2d(8, 1, 2, stride=2, padding=1),  # b, 1, 28, 28
+        #     nn.Tanh()
+        # )
 
-            ('conv2d', [16, 16, 3, 3, 1, 0]),   # factor1
-            ('avg_pool2d', [2, 2, 0]),          # factor1
-            ('conv2d', [16, 16, 3, 3, 1, 1]),   # factor1
-            ('avg_pool2d', [2, 2, 0]),          # factor1
+        if True:
+            self.config = [
+                # print('ddd'*20)
+                # tmp = nn.ConvTranspose2d(16, 8, 5, stride=3, padding=1)
+                # output_padding = tmp._output_padding(input, None)
+                # # torch.Size([16, 8, 5, 5]) torch.Size([8]) (3, 3) (1, 1)
+                # print(tmp.weight.shape, tmp.bias.shape, tmp.stride, tmp.padding,
+                #       output_padding, tmp.groups, tmp.dilation) # (0, 0) 1 (1, 1)
+                # # stride=1, padding=0, output_padding=0, groups=1, dilation=1
+                # F.conv_transpose2d()
+                # print('ddd'*20)
 
-            ('conv2d', [4, 16, 3, 3, 1, 1]),    #
+                # conv2d:[c_out, c_in, kernelsz, kernelsz, stride, padding]
+                # convt2d: [c_in, c_out, kernelsz, kernelsz, stride, padding], output_padding=0, groups=1, dilation=1
+                # pool2d:[kernelsz, stride, padding]
+                ('conv2d', [16, 1, 3, 3, 3, 1]), # the first
+                ('relu',   [True]),
+                ('max_pool2d', [2, 2, 0]),
+                ('conv2d', [8, 16, 3, 3, 2, 1]), #
+                ('relu',[True]),
+                ('max_pool2d', [2, 1, 0]),
 
-            ('hidden', []), # hidden variable
-            ('conv2d', [16, 4, 3, 3, 1, 1]),    # defactor1
-            ('upsample',[2]),
-            ('conv2d', [16, 16, 3, 3, 1, 1]),   # defactor1
-            ('upsample',[2]),
 
-            # ('conv2d', [16, 16, 3, 3, 1, 1]),
-            ('conv2d', [1, 16, 3, 3, 1, 1])
-        ]
+                ('hidden', []), # hidden variable
+
+                # [ch_out, ch_in]
+                ('convt2d', [8, 16, 3, 3, 2, 0]),    # defactor1
+                ('relu', [True]),
+                ('convt2d', [16, 8, 5, 5, 3, 1]),
+                ('relu', [True]),
+                ('convt2d', [8, 1, 2, 2, 2, 1]),
+                ('tanh',[])
+            ]
+        else:
+            self.config = [
+                # conv2d:[c_out, c_in, kernelsz, kernelsz, stride, padding]
+                # pool2d:[kernelsz, stride, padding]
+                # upsample:[factor]
+                ('conv2d', [16, 1, 1, 1, 1, 1]),  # the first
+
+                ('conv2d', [16, 16, 3, 3, 1, 0]),  # factor1
+                ('avg_pool2d', [2, 2, 0]),  # factor1
+                ('conv2d', [16, 16, 3, 3, 1, 1]),  # factor1
+                ('avg_pool2d', [2, 2, 0]),  # factor1
+
+                ('conv2d', [4, 16, 3, 3, 1, 1]),  #
+
+                ('hidden', []),  # hidden variable
+                ('conv2d', [16, 4, 3, 3, 1, 1]),  # defactor1
+                ('upsample', [2]),
+                ('conv2d', [16, 16, 3, 3, 1, 1]),  # defactor1
+                ('upsample', [2]),
+
+                # ('conv2d', [16, 16, 3, 3, 1, 1]),
+                ('conv2d', [1, 16, 3, 3, 1, 1])
+            ]
 
         # this dict contains all tensors needed to be optimized
         self.vars = nn.ParameterList()
@@ -47,11 +99,26 @@ class Learner(nn.Module):
                 # [ch_out]
                 self.vars.append(nn.Parameter(torch.zeros(param[0])))
 
+            elif name is 'convt2d':
+                # [ch_in, ch_out, kernelsz, kernelsz, stride, padding]
+                w = nn.Parameter(torch.ones(*param[:4]))
+                # gain=1 according to cbfin's implementation
+                torch.nn.init.xavier_uniform_(w)
+                self.vars.append(w)
+                # [ch_in, ch_out]
+                self.vars.append(nn.Parameter(torch.zeros(param[1])))
+
+            elif name is 'tanh':
+                continue
+            elif name is 'relu':
+                continue
             elif name is 'hidden':
                 continue
             elif name is 'upsample':
                 continue
             elif name is 'avg_pool2d':
+                continue
+            elif name is 'max_pool2d':
                 continue
             else:
                 raise NotImplementedError
@@ -71,6 +138,17 @@ class Learner(nn.Module):
                       %(param[0], param[1], param[2], param[3], param[4], param[5],)
                 info += tmp + '\n'
 
+            elif name is 'convt2d':
+                tmp = 'convTranspose2d:(ch_in:%d, ch_out:%d, k:%dx%d, stride:%d, padding:%d)'\
+                      %(param[0], param[1], param[2], param[3], param[4], param[5],)
+                info += tmp + '\n'
+
+            elif name is 'tanh':
+                tmp = name + ':' + str(tuple(param))
+                info += tmp + '\n'
+            elif name is 'relu':
+                tmp = name + ':' + str(tuple(param))
+                info += tmp + '\n'
             elif name is 'hidden':
                 tmp = name + ':' + str(tuple(param))
                 info += tmp + '\n'
@@ -80,10 +158,15 @@ class Learner(nn.Module):
             elif name is 'avg_pool2d':
                 tmp = 'avg_pool2d:(k:%d, stride:%d, padding:%d)'%(param[0], param[1], param[2])
                 info += tmp + '\n'
+            elif name is 'max_pool2d':
+                tmp = 'max_pool2d:(k:%d, stride:%d, padding:%d)'%(param[0], param[1], param[2])
+                info += tmp + '\n'
             else:
                 raise NotImplementedError
 
         return info
+
+
 
     def forward(self, x, vars=None):
 
@@ -99,13 +182,24 @@ class Learner(nn.Module):
                 x = F.conv2d(x, w, b, stride=param[4], padding=param[5])
                 idx += 2
                 # print(name, param, '\tout:', x.shape)
+            elif name is 'convt2d':
+                w, b = vars[idx:(idx + 2)]
+                # remember to keep synchrozied of forward_encoder and forward_decoder!
+                x = F.conv_transpose2d(x, w, b, stride=param[4], padding=param[5])
+                idx += 2
+                # print(name, param, '\tout:', x.shape)
+            elif name is 'relu':
+                x = F.relu(x, inplace=param[0])
+            elif name is 'tanh':
+                x = F.tanh(x)
             elif name is 'hidden':
                 continue
             elif name is 'upsample':
                 x = F.upsample_nearest(x, scale_factor=param[0])
-
-            elif name is 'avg_pool2d':
+            elif name is 'max_pool2d':
                 x = F.max_pool2d(x, param[0], param[1], param[2])
+            elif name is 'avg_pool2d':
+                x = F.avg_pool2d(x, param[0], param[1], param[2])
             else:
                 raise NotImplementedError
 
@@ -131,15 +225,25 @@ class Learner(nn.Module):
                 w, b = vars[idx:(idx + 2)]
                 x = F.conv2d(x, w, b, stride=param[4], padding=param[5])
                 idx += 2
-
+            elif name is 'convt2d':
+                w, b = vars[idx:(idx + 2)]
+                # remember to keep synchrozied of forward_encoder and forward_decoder!
+                x = F.conv_transpose2d(x, w, b, stride=param[4], padding=param[5])
+                idx += 2
+                # print(name, param, '\tout:', x.shape)
+            elif name is 'relu':
+                x = F.relu(x, inplace=param[0])
+            elif name is 'tanh':
+                x = F.tanh(x)
             elif name is 'hidden':
                 break
-
             elif name is 'upsample':
                 x = F.upsample_nearest(x, scale_factor=param[0])
 
-            elif name is 'avg_pool2d':
+            elif name is 'max_pool2d':
                 x = F.max_pool2d(x, param[0], param[1], param[2])
+            elif name is 'avg_pool2d':
+                x = F.avg_pool2d(x, param[0], param[1], param[2])
             else:
                 raise NotImplementedError
 
@@ -176,14 +280,24 @@ class Learner(nn.Module):
                 w, b = vars[idx:(idx + 2)]
                 x = F.conv2d(x, w, b, stride=param[4], padding=param[5])
                 idx += 2
-
+            elif name is 'convt2d':
+                w, b = vars[idx:(idx + 2)]
+                # remember to keep synchrozied of forward_encoder and forward_decoder!
+                x = F.conv_transpose2d(x, w, b, stride=param[4], padding=param[5])
+                idx += 2
+                # print(name, param, '\tout:', x.shape)
+            elif name is 'tanh':
+                x = F.tanh(x)
+            elif name is 'relu':
+                x = F.relu(x, inplace=param[0])
             elif name is 'hidden':
                 raise NotImplementedError
             elif name is 'upsample':
                 x = F.upsample_nearest(x, scale_factor=param[0])
-
-            elif name is 'avg_pool2d':
+            elif name is 'max_pool2d':
                 x = F.max_pool2d(x, param[0], param[1], param[2])
+            elif name is 'avg_pool2d':
+                x = F.avg_pool2d(x, param[0], param[1], param[2])
             else:
                 raise NotImplementedError
 

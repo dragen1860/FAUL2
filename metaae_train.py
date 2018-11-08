@@ -31,7 +31,7 @@ def main(args):
     vis = visdom.Visdom()
     visualh = VisualH(vis)
     global_step = 0
-    vis.line([1], [0], win='qry_loss', opts={'title': 'qry_loss'})
+    vis.line([0.5], [0], win='qry_loss', opts={'title': 'qry_loss'})
     vis.line([[0,0]], [[0,0]], win='classify_acc', opts=dict(legend=['before', 'after'], showlegend=True,
                                                              title='class_acc'))
 
@@ -39,9 +39,11 @@ def main(args):
 
         # 1. train
         db_train = DataLoader(
-            MnistNShot('db/mnist', training=True, n_way=5, k_spt=5, k_qry=15, imgsz=32, episode_num=5000),
+            MnistNShot('db/mnist', training=True, n_way=args.n_way, k_spt=args.k_spt, k_qry=args.k_qry,
+                       imgsz=args.imgsz, episode_num=args.train_episode_num),
             batch_size=args.task_num, shuffle=True)
 
+        # train
         for batchidx, (spt_x, spt_y, qry_x, qry_y) in enumerate(db_train):
 
             spt_x, spt_y, qry_x, qry_y = spt_x.to(device), spt_y.to(device), qry_x.to(device), qry_y.to(device)
@@ -50,15 +52,15 @@ def main(args):
 
             global_step += 1
             if global_step % 20 == 0:
-                vis.line([qry_loss.item()], [global_step], win='qry_loss', update='append',
-                         opts={'title':'qry_loss'})
+                vis.line([qry_loss.item()], [global_step], win='qry_loss', update='append')
 
                 if global_step % 200 == 0:
                     print(global_step, qry_loss.item())
 
         # clustering, visualization and classification
         db_test = DataLoader(
-            MnistNShot('db/mnist', training=False, n_way=5, k_spt=5, k_qry=45, imgsz=32, episode_num=100),
+            MnistNShot('db/mnist', training=False, n_way=args.n_way, k_spt=args.k_spt, k_qry=45,
+                       imgsz=args.imgsz, episode_num=args.test_episode_num),
             batch_size=1, shuffle=True)
 
         for batchidx, (spt_x, spt_y, qry_x, qry_y) in enumerate(db_test):
@@ -106,8 +108,9 @@ if __name__ == '__main__':
     parser.add_argument('--n_way', type=int, default=5)
     parser.add_argument('--k_spt', type=int, default=1)
     parser.add_argument('--k_qry', type=int, default=15)
-    parser.add_argument('--imgsz', type=int, default=32)
-    # parser.add_argument('--h_d', type=int, default=4)
-    # parser.add_argument('--h_c', type=int, default=4)
+    parser.add_argument('--imgc', type=int, default=1)
+    parser.add_argument('--imgsz', type=int, default=28)
+    parser.add_argument('--train_episode_num', type=int, default=5000)
+    parser.add_argument('--test_episode_num', type=int, default=100)
     args = parser.parse_args()
     main(args)
