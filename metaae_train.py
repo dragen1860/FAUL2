@@ -24,7 +24,8 @@ def main(args):
     np.random.seed(222)
 
     device = torch.device('cuda')
-    net = MetaLearner(args.n_way, args.k_spt, args.k_qry, args.task_num, args.update_num, args.meta_lr, args.update_lr)
+    net = MetaLearner(args.n_way, args.k_spt, args.k_qry, args.task_num, args.update_num,
+                      args.meta_lr, args.update_lr, args.imgc, args.imgsz)
     net.to(device)
 
 

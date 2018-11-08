@@ -6,28 +6,13 @@ from    torch.utils.data import TensorDataset, DataLoader
 from    torch import optim
 import  numpy as np
 
+
+
 class Learner(nn.Module):
 
-    def __init__(self, imgsz=32, imgc = 1):
+    def __init__(self, imgc=1, imgsz=28):
         super(Learner, self).__init__()
 
-        # self.encoder = nn.Sequential(
-        #     nn.Conv2d(1, 16, 3, stride=3, padding=1),  # b, 16, 10, 10
-        #     nn.ReLU(True),
-        #     nn.MaxPool2d(2, stride=2),  # b, 16, 5, 5
-        #     nn.Conv2d(16, 8, 3, stride=2, padding=1),  # b, 8, 3, 3
-        #     nn.ReLU(True),
-        #     nn.MaxPool2d(2, stride=1)  # b, 8, 2, 2
-        # )
-        #
-        # self.decoder = nn.Sequential(
-        #     nn.ConvTranspose2d(8, 16, 3, stride=2),  # b, 16, 5, 5
-        #     nn.ReLU(True),
-        #     nn.ConvTranspose2d(16, 8, 5, stride=3, padding=1),  # b, 8, 15, 15
-        #     nn.ReLU(True),
-        #     nn.ConvTranspose2d(8, 1, 2, stride=2, padding=1),  # b, 1, 28, 28
-        #     nn.Tanh()
-        # )
 
         if True:
             self.config = [
@@ -50,7 +35,6 @@ class Learner(nn.Module):
                 ('conv2d', [8, 16, 3, 3, 2, 1]), #
                 ('relu',[True]),
                 ('max_pool2d', [2, 1, 0]),
-
 
                 ('hidden', []), # hidden variable
 
@@ -125,7 +109,7 @@ class Learner(nn.Module):
 
         h = self.forward_encoder(torch.Tensor(2, imgc, imgsz, imgsz))
         out = self.forward(torch.Tensor(2, imgc, imgsz, imgsz))
-        print('hidden:', h.shape, 'out:', out.shape)
+        print([2, imgc, imgsz, imgsz], '>:', h.shape, ':<', out.shape)
         _, self.h_c, self.h_d, _ = h.shape
 
 
@@ -330,7 +314,7 @@ class Learner(nn.Module):
 
 class MetaLearner(nn.Module):
 
-    def __init__(self, n_way, k_spt, k_qry, task_num, update_num, meta_lr, update_lr):
+    def __init__(self, n_way, k_spt, k_qry, task_num, update_num, meta_lr, update_lr, imgc, imgsz):
         """
 
         :param n_way:
@@ -340,6 +324,8 @@ class MetaLearner(nn.Module):
         :param update_num:
         :param meta_lr:
         :param update_lr:
+        :param imgc:
+        :param imgsz:
         """
         super(MetaLearner, self).__init__()
 
@@ -351,7 +337,7 @@ class MetaLearner(nn.Module):
         self.task_num = task_num
         self.update_num = update_num
 
-        self.learner = Learner()
+        self.learner = Learner(imgc, imgsz)
         self.criteon = nn.MSELoss()
         self.meta_optim = optim.Adam(self.learner.parameters(), lr=self.meta_lr)
 
@@ -371,13 +357,14 @@ class MetaLearner(nn.Module):
             m.apply(weights_init)
 
 
-    def finetuning(self, x_spt, y_spt, x_qry, y_qry):
+    def finetuning(self, x_spt, y_spt, x_qry, y_qry, update_num):
         """
 
         :param x_spt: [task_num, sptsz, c_, h, w]
         :param y_spt: [task_num, sptsz]
         :param x_qry:
         :param y_qry:
+        :param update_num: update for fine-tuning
         :return:
         """
         sptsz, c_, h, w = x_spt.size()
@@ -399,7 +386,7 @@ class MetaLearner(nn.Module):
 
 
         # 4. continue to update
-        for k in range(1, self.update_num):
+        for k in range(1, update_num):
             # 1. run the i-th task and compute loss for k=1~K-1
             pred = self.learner(x_spt, fast_weights)
             loss = self.criteon(pred, x_spt)
