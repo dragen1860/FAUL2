@@ -71,7 +71,8 @@ def main(args):
 
             # we can get the representation before first update, after k update
             # and test the representation on merged(test_spt, test_qry) set
-            h_spt0, h_spt1, h_qry0, h_qry1 = net.finetuning(spt_x, spt_y, qry_x, qry_y)
+            h_spt0, h_spt1, h_qry0, h_qry1 = net.finetuning(spt_x, spt_y, qry_x, qry_y,
+                                                            update_num=args.update_num+5)
 
             visualh.update(h_spt0, h_spt1, h_qry0, h_qry1, spt_y, qry_y, global_step)
 
