@@ -107,9 +107,11 @@ class AE(nn.Module):
         :return:
         """
         # save current state
-        theta = self.state_dict()
-        for k,v in self.state_dict().items():
-            print(v.norm(p=1))
+        theta = {}
+        with torch.no_grad():
+            for k,v in self.state_dict().items():
+                # print(k, v) # decoder.4.bias tensor([-0.0057], device='cuda:0')
+                theta[k] = v.clone()
 
 
         # record original representation
@@ -134,16 +136,14 @@ class AE(nn.Module):
         h_qry1 = self.forward_encoder(x_qry)
 
 
-        print('ft loss:', losses)
+        print('ft loss:', np.array(losses).astype(np.float16))
 
         # restore original state
         # make sure theta is different from updated theta
-        for k,v in self.state_dict().items():
-            v0 = theta[k]
-            print(id(v0), id(v))
-            print(v0.norm(p=1), v.norm(p=1))
-
-
+        # for k,v1 in self.state_dict().items():
+        #     v0 = theta[k]
+        #     print(id(v0), id(v1))
+        #     print(v0.norm(p=1), v1.norm(p=1))
         self.load_state_dict(theta)
 
 
