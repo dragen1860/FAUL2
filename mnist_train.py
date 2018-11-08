@@ -32,6 +32,9 @@ def main(args):
     visualh = VisualH(vis)
     global_step = 0
     vis.line([1], [0], win='qry_loss', opts={'title': 'qry_loss'})
+    vis.line([0], [0], win='classify_acc', name='1', opts={'title': 'classify_acc', 'legend':['1111'],
+                                                           'showlegend':True})
+    vis.line([0], [0], win='classify_acc', name='2', opts={'title': 'classify_acc'})
 
     for epoch in range(1000):
 
@@ -75,6 +78,10 @@ def main(args):
             acc0 = net.classify_train(h_spt0, spt_y, h_qry0, qry_y, use_h=True)
             acc1 = net.classify_train(h_spt1, spt_y, h_qry1, qry_y, use_h=True)
             print(batchidx, 'classification:\n', acc0, '\n', acc1)
+
+            vis.line([acc0.max()], [global_step], win='classify_acc', name='1', update='append')
+            vis.line([acc1.max()], [global_step], win='classify_acc', name='2', update='append')
+
 
             break
 
