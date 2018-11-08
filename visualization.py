@@ -28,10 +28,10 @@ class VisualH:
         :param global_step:
         :return:
         """
-        h_spt0 = h_spt0.view(h_spt0.size(0), -1).cpu().numpy()
-        h_spt1 = h_spt1.view(h_spt1.size(0), -1).cpu().numpy()
-        h_qry0 = h_qry0.view(h_qry0.size(0), -1).cpu().numpy()
-        h_qry1 = h_qry1.view(h_qry1.size(0), -1).cpu().numpy()
+        h_spt0 = h_spt0.view(h_spt0.size(0), -1).detach().cpu().numpy()
+        h_spt1 = h_spt1.view(h_spt1.size(0), -1).detach().cpu().numpy()
+        h_qry0 = h_qry0.view(h_qry0.size(0), -1).detach().cpu().numpy()
+        h_qry1 = h_qry1.view(h_qry1.size(0), -1).detach().cpu().numpy()
         y_spt = y_spt.cpu().numpy()
         y_qry = y_qry.cpu().numpy()
 

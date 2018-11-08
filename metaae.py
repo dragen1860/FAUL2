@@ -314,6 +314,7 @@ class MetaLearner(nn.Module):
         :param y_train: [b]
         :param x_test:
         :param y_test:
+        :param use_h: use h or x
         :param batchsz: batchsz for classifier
         :param train_step: training steps for classifier
         :return:
@@ -329,6 +330,8 @@ class MetaLearner(nn.Module):
             # [b, h_c, h_d, h_d]
             x_train = self.learner.forward_encoder(x_train).detach()
             x_test = self.learner.forward_encoder(x_test).detach()
+        else:
+            x_train, x_test = x_train.detach(), x_test.detach()
         y_train, y_test = y_train.detach(), y_test.detach()
 
         # merge all and re-splitting
