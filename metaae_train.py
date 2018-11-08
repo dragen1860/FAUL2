@@ -60,7 +60,7 @@ def main(args):
 
         # clustering, visualization and classification
         db_test = DataLoader(
-            MnistNShot('db/mnist', training=False, n_way=args.n_way, k_spt=args.k_spt, k_qry=500,
+            MnistNShot('db/mnist', training=False, n_way=args.n_way, k_spt=args.k_spt, k_qry=200,
                        imgsz=args.imgsz, episode_num=args.test_episode_num),
             batch_size=1, shuffle=True)
 
