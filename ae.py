@@ -13,7 +13,7 @@ from    torch.utils.data import TensorDataset, DataLoader
 
 class AE(nn.Module):
 
-    def __init__(self, n_way, imgc=1, imgsz=32):
+    def __init__(self, n_way, imgc=1, imgsz=28):
         """
 
         :param n_way:
