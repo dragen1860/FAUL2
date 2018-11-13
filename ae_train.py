@@ -28,7 +28,7 @@ def main(args):
     net.to(device)
 
 
-    vis = visdom.Visdom()
+    vis = visdom.Visdom(env='ae')
     visualh = VisualH(vis)
     global_step = 0
     vis.line([0.25], [0], win='train_loss', opts={'title': 'train_loss'})
@@ -105,7 +105,7 @@ if __name__ == '__main__':
     parser.add_argument('--update_num', type=int, default=5, help='update num')
     parser.add_argument('--update_lr', type=float, default=0.01, help='update lr')
     parser.add_argument('--n_way', type=int, default=5)
-    parser.add_argument('--k_spt', type=int, default=1)
+    parser.add_argument('--k_spt', type=int, default=15)
     parser.add_argument('--k_qry', type=int, default=15)
     parser.add_argument('--imgc', type=int, default=1)
     parser.add_argument('--imgsz', type=int, default=28)
