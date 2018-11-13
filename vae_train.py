@@ -8,6 +8,7 @@ from    mnistNShot import MnistNShot
 from    visualization import VisualH
 import  numpy as np
 from    matplotlib import pyplot as plt
+from    torchvision.utils import  make_grid
 import  visdom
 
 
@@ -28,6 +29,7 @@ def main(args):
     net.to(device)
     print(net)
 
+    # plt.ion()
 
     vis = visdom.Visdom(env='vae')
     visualh = VisualH(vis)
@@ -49,30 +51,41 @@ def main(args):
         for batchidx, (spt_x, spt_y, qry_x, qry_y) in enumerate(db_train):
             # print(torch.max(spt_x), torch.min(spt_x))
 
+            # [task_num, sptsz, 1, 28, 28]
             spt_x, spt_y, qry_x, qry_y = spt_x.to(device), spt_y.to(device), qry_x.to(device), qry_y.to(device)
 
             loss, x_hat = net(spt_x, spt_y, qry_x, qry_y)
+            x_hat = torch.sigmoid(x_hat)
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
             global_step += 1
-            if global_step % 50 == 0:
+            if global_step % 100 == 0:
                 vis.line([loss.item()], [global_step], win='train_loss', update='append')
 
-                # x_hat is composed of [spt_x_hat, qry_x_hat]
-                n = min(spt_x.size(0), 8)
-                comparison = torch.cat([spt_x.view(-1, args.imgc, args.imgsz, args.imgsz)[:n], x_hat[:n]])
-                vis.images(comparison, nrow=n, win='train_reconstruct',
-                           opts=dict(title='train_reconstruct%d'%global_step))
+                # print(torch.max(spt_x), torch.min(spt_x))
 
-                if global_step % 200 == 0:
+                # x_hat is composed of [spt_x_hat, qry_x_hat]
+                n = args.n_way * args.k_spt
+                x0 = spt_x.view(-1, args.imgc, args.imgsz, args.imgsz)[:n]
+                x1 = x_hat[:n]
+                comparison = torch.cat([x0, x1])
+                vis.images(comparison, nrow=args.n_way, win='train_reconstruct',
+                           opts=dict(title='train_reconstruct:%d'%global_step))
+
+                # comparison = make_grid(x0, nrow=n)
+                # comparison = comparison.permute(1, 2, 0).cpu().detach().numpy()
+                # plt.imshow(comparison)
+                # plt.pause(0.001)
+
+                if global_step % 300 == 0:
                     print(global_step, loss.item())
 
 
 
-            continue
+        continue
 
         # clustering, visualization and classification
         db_test = DataLoader(
@@ -120,8 +133,8 @@ if __name__ == '__main__':
     parser.add_argument('--task_num', type=int, default=4, help='batchsz = task_num * (sptsz+qrysz)')
     parser.add_argument('--lr', type=float, default=1e-3, help='lr')
     parser.add_argument('--n_way', type=int, default=5)
-    parser.add_argument('--k_spt', type=int, default=15)
-    parser.add_argument('--k_qry', type=int, default=15)
+    parser.add_argument('--k_spt', type=int, default=5)
+    parser.add_argument('--k_qry', type=int, default=5)
     parser.add_argument('--k_qry_test', type=int, default=200, help='in test phase')
     parser.add_argument('--imgc', type=int, default=1)
     parser.add_argument('--imgsz', type=int, default=28)
