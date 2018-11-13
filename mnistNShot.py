@@ -43,14 +43,14 @@ class MnistNShot(Dataset):
                                                  # transforms.RandomHorizontalFlip(),
                                                  # transforms.RandomRotation(5),
                                                  transforms.ToTensor(),
-                                                 transforms.Normalize((0.5,), (1.0,))
+                                                 transforms.Normalize((0.5,), (0.5,))
                                                  ])
         else:
             self.transform = transforms.Compose([
                                                  # lambda x: Image.open(x).convert('RGB'),
                                                  transforms.Resize((self.imgsz, self.imgsz)),
                                                  transforms.ToTensor(),
-                                                 transforms.Normalize((0.5,), (1.0,))
+                                                 transforms.Normalize((0.5,), (0.5,))
                                                  ])
 
         db1 = DataLoader(datasets.MNIST(root, train=True, transform=self.transform, download=True),

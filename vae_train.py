@@ -26,6 +26,7 @@ def main(args):
     device = torch.device('cuda')
     net = VAE(args.n_way, args.beta, args.imgc, args.imgsz)
     net.to(device)
+    print(net)
 
 
     vis = visdom.Visdom(env='vae')
@@ -109,7 +110,7 @@ if __name__ == '__main__':
     parser.add_argument('--k_qry', type=int, default=15)
     parser.add_argument('--imgc', type=int, default=1)
     parser.add_argument('--imgsz', type=int, default=28)
-    parser.add_argument('--beta', type=float, default=0.05, help='beta hyperparameters for vae')
+    parser.add_argument('--beta', type=float, default=1.0, help='beta hyperparameters for vae')
     parser.add_argument('--train_episode_num', type=int, default=5000)
     parser.add_argument('--test_episode_num', type=int, default=100)
     args = parser.parse_args()
