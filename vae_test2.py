@@ -11,13 +11,13 @@ import  visdom
 parser = argparse.ArgumentParser(description='VAE MNIST Example')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
-parser.add_argument('--epochs', type=int, default=10, metavar='N',
+parser.add_argument('--epochs', type=int, default=10000, metavar='N',
                     help='number of epochs to train (default: 10)')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='enables CUDA training')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
-parser.add_argument('--log-interval', type=int, default=10, metavar='N',
+parser.add_argument('--log-interval', type=int, default=100, metavar='N',
                     help='how many batches to wait before logging training status')
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -47,30 +47,33 @@ class VAE(nn.Module):
         super(VAE, self).__init__()
 
 
-        self.fc21 = nn.Linear(32, 8)
-        self.fc22 = nn.Linear(32, 8)
+        self.fc21 = nn.Linear(32*4*4, 20)
+        self.fc22 = nn.Linear(32*4*4, 20)
 
         # [b, imgc, imgsz, imgsz] => [b, h_c, h_d, h_d]
         self.encoder = nn.Sequential(
-            nn.Conv2d(1, 16, 3, stride=3, padding=1),  # b, 16, 10, 10
-            nn.ReLU(True),
-            nn.MaxPool2d(2, stride=2),  # b, 16, 5, 5
-            nn.Conv2d(16, 8, 3, stride=2, padding=1),  # b, 8, 3, 3
-            nn.ReLU(True),
-            nn.MaxPool2d(2, stride=1)  # b, 8, 2, 2
+            nn.Conv2d(1, 16, 5, stride=2, padding=0),  # b, 16, 14, 14
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(16, 32, 5, stride=2, padding=0),  # b, 32, 7, 7
+            nn.LeakyReLU(0.2, inplace=True),
         )
 
         # [b, q_h_d, 1, 1] => [b, imgc, imgsz, imgsz]
         self.decoder = nn.Sequential(
             # Hout=(Hin−1)×stride[0] − 2×padding[0]+kernel_size[0]+output_padding[0]
-            nn.ConvTranspose2d(8, 16, 3, stride=2),  # b, 16, 5, 5
+            nn.ConvTranspose2d(20, 16, 5, stride=2),  # b, 16, 5, 5
             nn.ReLU(True),
-            nn.ConvTranspose2d(16, 8, 5, stride=3, padding=1),  # b, 8, 15, 15
+            nn.ConvTranspose2d(16, 8, 5, stride=2, padding=0),  # b, 8, 15, 15
             nn.ReLU(True),
-            nn.ConvTranspose2d(8, 1, 5, stride=3, padding=1, output_padding=1),  # b, 1, 28, 28
+            nn.ConvTranspose2d(8, 1, 4, stride=2, padding=0, output_padding=0),  # b, 1, 28, 28
             # TODO: this can be removed? [-1~1]
             # nn.Tanh()
         )
+
+        inp = torch.Tensor(2, 1, 28, 28)
+        h = self.encoder(inp)
+        print(h.shape)
+
 
     def encode(self, x):
         # h1 = F.relu(self.fc1(x))
@@ -107,6 +110,7 @@ def loss_function(recon_x, x, mu, logvar):
     # BCE = F.binary_cross_entropy_with_logits(recon_x, x, reduction='sum')
 
     BCE = criteon(recon_x, x)
+    # print(recon_x.shape)
 
     # see Appendix B from VAE paper:
     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
@@ -170,7 +174,7 @@ if __name__ == "__main__":
         train(epoch, vis)
         test(epoch, vis)
         with torch.no_grad():
-            sample = torch.randn(64, 8).to(device)
+            sample = torch.randn(64, 20).to(device)
             sample = model.decode(sample).cpu()
             save_image(sample.view(64, 1, 28, 28),
                        'results/sample_' + str(epoch) + '.png')

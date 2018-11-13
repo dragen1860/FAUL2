@@ -86,7 +86,7 @@ def main(args):
 
 
 
-        continue
+
 
         # clustering, visualization and classification
         db_test = DataLoader(
