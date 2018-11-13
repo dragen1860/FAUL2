@@ -58,6 +58,7 @@ class VAE(nn.Module):
         # self.criteon = nn.MSELoss()
         # for [0~1]
         # !!! sum is critical!
+        # sum is on element-wise but NOT on img level, we need to devide by pixel number
         self.criteon = nn.BCEWithLogitsLoss(reduction='sum')
 
 
@@ -170,11 +171,13 @@ class VAE(nn.Module):
         # with/without logits.
         x_hat = self.decoder(q_h)
         # the smaller, the higher likelihood.
-        loss_ll = -self.criteon(x_hat, x)
+        # element-wise loss to img-wise loss
+        loss_ll = -self.criteon(x_hat, x) / self.imgsz**2
 
         # elbo
         elbo = loss_ll - self.beta * loss_kl
 
+        # print(batchsz, loss_ll.item(), loss_kl.item())
 
         return -elbo, x_hat
 

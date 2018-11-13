@@ -54,6 +54,7 @@ def main(args):
             # [task_num, sptsz, 1, 28, 28]
             spt_x, spt_y, qry_x, qry_y = spt_x.to(device), spt_y.to(device), qry_x.to(device), qry_y.to(device)
 
+            # x_hat is logits of decoders.
             loss, x_hat = net(spt_x, spt_y, qry_x, qry_y)
             x_hat = torch.sigmoid(x_hat)
 
