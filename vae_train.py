@@ -1,6 +1,6 @@
 import  argparse
 import  torch
-from    torch import nn
+from    torch import optim
 from    torch.utils.data import DataLoader
 from    vae import VAE
 from    mnistNShot import MnistNShot
@@ -36,6 +36,8 @@ def main(args):
     vis.line([[0,0]], [[0,0]], win='classify_acc', opts=dict(legend=['before', 'after'], showlegend=True,
                                                              title='class_acc'))
 
+    optimizer = optim.Adam(net.parameters(), lr=args.lr)
+
     for epoch in range(1000):
 
         # 1. train
@@ -50,6 +52,10 @@ def main(args):
 
             loss, x_hat = net(spt_x, spt_y, qry_x, qry_y)
 
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
             global_step += 1
             if global_step % 50 == 0:
                 vis.line([loss.item()], [global_step], win='train_loss', update='append')
@@ -59,7 +65,7 @@ def main(args):
 
         # clustering, visualization and classification
         db_test = DataLoader(
-            MnistNShot('db/mnist', training=False, n_way=args.n_way, k_spt=args.k_spt, k_qry=200,
+            MnistNShot('db/mnist', training=False, n_way=args.n_way, k_spt=args.k_spt, k_qry=args.k_qry_test,
                        imgsz=args.imgsz, episode_num=args.test_episode_num),
             batch_size=1, shuffle=True)
 
@@ -102,12 +108,11 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--task_num', type=int, default=4, help='batchsz = task_num * (sptsz+qrysz)')
-    parser.add_argument('--meta_lr', type=float, default=1e-3, help='meta lr')
-    parser.add_argument('--update_num', type=int, default=5, help='update num')
-    parser.add_argument('--update_lr', type=float, default=0.01, help='update lr')
+    parser.add_argument('--lr', type=float, default=1e-3, help='lr')
     parser.add_argument('--n_way', type=int, default=5)
     parser.add_argument('--k_spt', type=int, default=15)
     parser.add_argument('--k_qry', type=int, default=15)
+    parser.add_argument('--k_qry_test', type=int, default=200, help='in test phase')
     parser.add_argument('--imgc', type=int, default=1)
     parser.add_argument('--imgsz', type=int, default=28)
     parser.add_argument('--beta', type=float, default=1.0, help='beta hyperparameters for vae')
