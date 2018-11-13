@@ -5,7 +5,7 @@ from    torch import nn, optim
 from    torch.nn import functional as F
 from    torchvision import datasets, transforms
 from    torchvision.utils import save_image
-
+import  visdom
 
 
 parser = argparse.ArgumentParser(description='VAE MNIST Example')
@@ -46,14 +46,38 @@ class VAE(nn.Module):
     def __init__(self):
         super(VAE, self).__init__()
 
-        self.fc1 = nn.Linear(784, 400)
-        self.fc21 = nn.Linear(400, 20)
-        self.fc22 = nn.Linear(400, 20)
-        self.fc3 = nn.Linear(20, 400)
-        self.fc4 = nn.Linear(400, 784)
+
+        self.fc21 = nn.Linear(32, 8)
+        self.fc22 = nn.Linear(32, 8)
+
+        # [b, imgc, imgsz, imgsz] => [b, h_c, h_d, h_d]
+        self.encoder = nn.Sequential(
+            nn.Conv2d(1, 16, 3, stride=3, padding=1),  # b, 16, 10, 10
+            nn.ReLU(True),
+            nn.MaxPool2d(2, stride=2),  # b, 16, 5, 5
+            nn.Conv2d(16, 8, 3, stride=2, padding=1),  # b, 8, 3, 3
+            nn.ReLU(True),
+            nn.MaxPool2d(2, stride=1)  # b, 8, 2, 2
+        )
+
+        # [b, q_h_d, 1, 1] => [b, imgc, imgsz, imgsz]
+        self.decoder = nn.Sequential(
+            # Hout=(Hin−1)×stride[0] − 2×padding[0]+kernel_size[0]+output_padding[0]
+            nn.ConvTranspose2d(8, 16, 3, stride=2),  # b, 16, 5, 5
+            nn.ReLU(True),
+            nn.ConvTranspose2d(16, 8, 5, stride=3, padding=1),  # b, 8, 15, 15
+            nn.ReLU(True),
+            nn.ConvTranspose2d(8, 1, 5, stride=3, padding=1, output_padding=1),  # b, 1, 28, 28
+            # TODO: this can be removed? [-1~1]
+            # nn.Tanh()
+        )
 
     def encode(self, x):
-        h1 = F.relu(self.fc1(x))
+        # h1 = F.relu(self.fc1(x))
+        h1 = self.encoder(x)
+
+        h1 = h1.view(h1.size(0), -1)
+
         return self.fc21(h1), self.fc22(h1)
 
     def reparameterize(self, mu, logvar):
@@ -62,22 +86,27 @@ class VAE(nn.Module):
         return eps.mul(std).add_(mu)
 
     def decode(self, z):
-        h3 = F.relu(self.fc3(z))
-        return torch.sigmoid(self.fc4(h3))
+        # h3 = F.relu(self.fc3(z))
+        # return torch.sigmoid(self.fc4(h3))
+        z = z.view(z.size(0), -1, 1, 1)
+        x = self.decoder(z)
+        return x
 
     def forward(self, x):
-        mu, logvar = self.encode(x.view(-1, 784))
+        mu, logvar = self.encode(x)
         z = self.reparameterize(mu, logvar)
         return self.decode(z), mu, logvar
 
 
 model = VAE().to(device)
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
-
+criteon = nn.BCEWithLogitsLoss(reduction='sum')
 
 # Reconstruction + KL divergence losses summed over all elements and batch
 def loss_function(recon_x, x, mu, logvar):
-    BCE = F.binary_cross_entropy(recon_x, x.view(-1, 784), reduction='sum')
+    # BCE = F.binary_cross_entropy_with_logits(recon_x, x, reduction='sum')
+
+    BCE = criteon(recon_x, x)
 
     # see Appendix B from VAE paper:
     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
@@ -88,13 +117,14 @@ def loss_function(recon_x, x, mu, logvar):
     return BCE + KLD, BCE
 
 
-def train(epoch):
+def train(epoch, vis):
 
     model.train()
     train_loss = 0
 
     for batch_idx, (data, _) in enumerate(train_loader):
-        data = data.to(device)
+        data = data.to(device) # [128, 1, 28, 28]
+
         optimizer.zero_grad()
         recon_batch, mu, logvar = model(data)
         loss, loss_reconstruct = loss_function(recon_batch, data, mu, logvar)
@@ -102,6 +132,9 @@ def train(epoch):
         train_loss += loss.item()
         optimizer.step()
         if batch_idx % args.log_interval == 0:
+            # print(recon_batch.shape)
+            vis.images(torch.sigmoid(recon_batch).view(-1, 1, 28, 28), nrow=16, win='vae_test')
+
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader),
@@ -111,7 +144,7 @@ def train(epoch):
         epoch, train_loss / len(train_loader.dataset)))
 
 
-def test(epoch):
+def test(epoch, vis):
     model.eval()
     test_loss = 0
     with torch.no_grad():
@@ -131,11 +164,13 @@ def test(epoch):
 
 
 if __name__ == "__main__":
+    vis = visdom.Visdom(env='vae')
+
     for epoch in range(1, args.epochs + 1):
-        train(epoch)
-        test(epoch)
+        train(epoch, vis)
+        test(epoch, vis)
         with torch.no_grad():
-            sample = torch.randn(64, 20).to(device)
+            sample = torch.randn(64, 8).to(device)
             sample = model.decode(sample).cpu()
             save_image(sample.view(64, 1, 28, 28),
                        'results/sample_' + str(epoch) + '.png')

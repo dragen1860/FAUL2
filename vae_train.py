@@ -47,6 +47,7 @@ def main(args):
             batch_size=args.task_num, shuffle=True)
 
         for batchidx, (spt_x, spt_y, qry_x, qry_y) in enumerate(db_train):
+            # print(torch.max(spt_x), torch.min(spt_x))
 
             spt_x, spt_y, qry_x, qry_y = spt_x.to(device), spt_y.to(device), qry_x.to(device), qry_y.to(device)
 
@@ -71,7 +72,7 @@ def main(args):
 
 
 
-
+            continue
 
         # clustering, visualization and classification
         db_test = DataLoader(

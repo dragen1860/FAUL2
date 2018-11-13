@@ -50,12 +50,16 @@ class VAE(nn.Module):
             nn.ReLU(True),
             nn.ConvTranspose2d(8, 1, 5, stride=3, padding=1, output_padding=1),  # b, 1, 28, 28
             # TODO: this can be removed? [-1~1]
-            nn.Tanh()
+            # nn.Tanh()
         )
 
 
         # for reconstruction loss
-        self.criteon = nn.MSELoss()
+        # self.criteon = nn.MSELoss()
+        # for [0~1]
+        # !!! sum is critical!
+        self.criteon = nn.BCEWithLogitsLoss(reduction='sum')
+
 
         # 1. get self.h_c, self.h_d
         h = self.encoder(torch.Tensor(2, imgc, imgsz, imgsz))
@@ -163,6 +167,7 @@ class VAE(nn.Module):
         # # get the prob of x, rescale x to [0~1]
         # loss_ll = x_dist.log_prob(0.5 * (x + 1)).sum() / batchsz
 
+        # with/without logits.
         x_hat = self.decoder(q_h)
         # the smaller, the higher likelihood.
         loss_ll = -self.criteon(x_hat, x)
@@ -193,6 +198,8 @@ class VAE(nn.Module):
         :return:
         """
         x_hat = self.decoder(q_h)
+
+        x_hat = F.sigmoid(x_hat)
 
         return x_hat
 
