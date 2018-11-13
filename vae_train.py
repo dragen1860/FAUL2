@@ -32,7 +32,7 @@ def main(args):
     vis = visdom.Visdom(env='vae')
     visualh = VisualH(vis)
     global_step = 0
-    vis.line([1.25], [0], win='train_loss', opts={'title': 'train_loss'})
+    vis.line([0.2], [0], win='train_loss', opts={'title': 'train_loss'})
     vis.line([[0,0]], [[0,0]], win='classify_acc', opts=dict(legend=['before', 'after'], showlegend=True,
                                                              title='class_acc'))
 
