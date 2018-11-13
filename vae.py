@@ -13,11 +13,12 @@ from    torch.utils.data import TensorDataset, DataLoader
 
 class VAE(nn.Module):
 
-    def __init__(self, n_way, beta, imgc=1, imgsz=28):
+    def __init__(self, n_way, beta, q_h_d, imgc=1, imgsz=28):
         """
 
         :param n_way:
         :param beta: beta for vae
+        :param q_h_d: different from h_c/h_d, we will convert h:[h_c, h_d, h_d] to q_h:[q_h_d]
         :param imgc:
         :param imgsz:
         """
@@ -25,52 +26,105 @@ class VAE(nn.Module):
 
 
         self.n_way = n_way
+        self.beta = beta
+        self.q_h_d = q_h_d
         self.imgc = imgc
         self.imgsz = imgsz
-        self.beta = beta
 
+        # [b, imgc, imgsz, imgsz] => [b, h_c, h_d, h_d]
         self.encoder = nn.Sequential(
             nn.Conv2d(1, 16, 3, stride=3, padding=1),  # b, 16, 10, 10
             nn.ReLU(True),
             nn.MaxPool2d(2, stride=2),  # b, 16, 5, 5
-            nn.Conv2d(16, 8, 3, stride=3, padding=1),  # b, 8, 3, 3
+            nn.Conv2d(16, 8, 3, stride=2, padding=1),  # b, 8, 3, 3
             nn.ReLU(True),
             nn.MaxPool2d(2, stride=1)  # b, 8, 2, 2
         )
 
-
-
+        # [b, q_h_d, 1, 1] => [b, imgc, imgsz, imgsz]
         self.decoder = nn.Sequential(
-            # Hout=(Hin−1)×stride[0] − 2×padding[0]+kernel_size[0]+output_padding[0
+            # Hout=(Hin−1)×stride[0] − 2×padding[0]+kernel_size[0]+output_padding[0]
             nn.ConvTranspose2d(8, 16, 3, stride=2),  # b, 16, 5, 5
             nn.ReLU(True),
             nn.ConvTranspose2d(16, 8, 5, stride=3, padding=1),  # b, 8, 15, 15
             nn.ReLU(True),
             nn.ConvTranspose2d(8, 1, 5, stride=3, padding=1, output_padding=1),  # b, 1, 28, 28
             # TODO: this can be removed? [-1~1]
-            # nn.Tanh()
+            nn.Tanh()
         )
 
 
-
+        # for reconstruction loss
         self.criteon = nn.MSELoss()
 
+        # 1. get self.h_c, self.h_d
         h = self.encoder(torch.Tensor(2, imgc, imgsz, imgsz))
         _, self.h_c, _, self.h_d = h.size()
-        out = self.decoder(h)
-        print([2, imgc, imgsz, imgsz], '>:', list(h.shape), ':<', list(out.shape))
 
-
-        # for
+        # 2. build vae random layer
         # mean
-        self.mu_net = nn.Linear(self.h_c * self.h_d**2, self.h_c * self.h_d**2)
-        # sigma^2, = variance
-        self.sigma2_net = nn.Linear(self.h_c * self.h_d**2, self.h_c * self.h_d**2)
-
-
+        self.mu_net = nn.Linear(self.h_c * self.h_d**2, self.q_h_d)
+        # log(sigma^2), = log(variance)
+        self.log_sigma2_net = nn.Linear(self.h_c * self.h_d**2, self.q_h_d)
 
         # hidden to n_way
-        self.classifier = nn.Sequential(nn.Linear(self.h_d ** 2 * self.h_c, self.n_way))
+        # based on h or q_h??
+        self.classifier = nn.Sequential(nn.Linear(self.q_h_d, self.n_way))
+
+
+        # need to setting up self.mu_net self.log_sigma2_net firstly
+        q_h, _, _ = self.vae_h_mu_logsigma2(h)
+        out = self.decoder(q_h)
+
+        print([2, imgc, imgsz, imgsz], '>:', list(h.shape), '=>', list(q_h.size()), ':<', list(out.shape))
+
+
+    def vae_h_mu_logsigma2(self, h):
+        """
+        return random q_h from deterministic h
+        :param h: [b, 8, 2, 2]
+        :return: q_h ,q_mu, log(singma^2)
+        """
+        batchsz = h.size(0)
+
+        # Variational AE, h=>q_h
+        # [b, 8, 2, 2] => [b, -1]
+        h_flat = h.view(batchsz, -1)
+        # mu of q(h)
+        # [b, h_size] => [b, q_h_size]
+        q_mu = self.mu_net(h_flat)
+        # log q_sigma^2 of q(h),
+        # [b, 32] => [b, 8]
+        log_q_sigma2 = self.log_sigma2_net(h_flat)
+
+
+        # # create distribution of q_h
+        # q_h_dist = torch.distributions.normal.Normal(loc=q_mu, scale=q_sigma)
+        # # and then sample a scalar?
+        # q_h = q_h_dist.sample()
+        # # reshape to [b, 8, 2, 2]
+        # q_h = q_h.view(batchsz, self.h_c, self.h_d, self.h_d)
+
+        # reparameterization trick
+        q_h = self.reparameterize(q_mu, log_q_sigma2)
+        # reshape to [b, 8] => [b, 8, 1, 1]
+        q_h = q_h.view(batchsz, self.q_h_d, 1, 1)
+
+
+        return q_h, q_mu, log_q_sigma2
+
+
+    def reparameterize(self, mu, log_sigma2):
+        """
+        std * N(0, 1) + mean
+        :param mu: mean
+        :param log_sigma2: log(sigma^2)
+        :return:
+        """
+        std = torch.exp(0.5 * log_sigma2)
+        eps = torch.randn_like(std)
+        # std * N(0, 1) + mean
+        return eps.mul(std).add_(mu)
 
 
     def forward(self, x_spt, y_spt, x_qry, y_qry):
@@ -93,37 +147,28 @@ class VAE(nn.Module):
         # h actual means following q_h.
         h = self.encoder(x)
 
-        # Variational AE, h=>q_h
-        # [b, 8, 2, 2] => [b, -1]
-        h_flat = h.view(batchsz, -1)
-        # mu of q(h)
-        q_mu = self.mu_net(h_flat)
-        # log q_sigma^2 of q(h), [b, 32]
-        log_q_sigma2 = self.sigma2_net(h_flat)
-        # q_sigma, [b, 32]
-        q_sigma = torch.sqrt(torch.exp(log_q_sigma2))
-        # create distribution of q_h
-        q_h_dist = torch.distributions.normal.Normal(loc=q_mu, scale=q_sigma)
-        # and then sample a scalar?
-        q_h = q_h_dist.sample()
-        # reshape to [b, 8, 2, 2]
-        q_h = q_h.view(batchsz, self.h_c, self.h_d, self.h_d)
+        # [b, 8, 2, 2] => [b, 8]
+        q_h, q_mu, log_q_sigma2 = self.vae_h_mu_logsigma2(h)
 
-        x_dist_logits = self.decoder(q_h)
-        # [0~1]
-        x_dist = torch.distributions.bernoulli.Bernoulli(logits=x_dist_logits)
-
+        # see Appendix B from VAE paper:
+        # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
+        # https://arxiv.org/abs/1312.6114
+        # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
         loss_kl = 0.5 * (-log_q_sigma2 -1 + torch.exp(log_q_sigma2) + torch.pow(q_mu, 2)).sum() / batchsz
-        # get the prob of x, rescale x to [0~1]
-        loss_ll = x_dist.log_prob(0.5 * (x + 1)).sum() / batchsz
+
+
+        # x_dist_logits = self.decoder(q_h)
+        # # [0~1]
+        # x_dist = torch.distributions.bernoulli.Bernoulli(logits=x_dist_logits)
+        # # get the prob of x, rescale x to [0~1]
+        # loss_ll = x_dist.log_prob(0.5 * (x + 1)).sum() / batchsz
+
+        x_hat = self.decoder(q_h)
+        # the smaller, the higher likelihood.
+        loss_ll = -self.criteon(x_hat, x)
+
         # elbo
         elbo = loss_ll - self.beta * loss_kl
-
-
-
-        # [-1~1]
-        x_hat = torch.sigmoid(x_dist_logits) * 2 - 1
-
 
 
         return -elbo, x_hat
@@ -136,36 +181,18 @@ class VAE(nn.Module):
         :return:
         """
         h = self.encoder(x)
-        batchsz = x.size(0)
 
-        # Variational AE, h=>q_h
-        # [b, 8, 2, 2] => [b, -1]
-        h_flat = h.view(batchsz, -1)
-        # mu of q(h)
-        q_mu = self.mu_net(h_flat)
-        # log q_sigma^2 of q(h), [b, 32]
-        log_q_sigma2 = self.sigma2_net(h_flat)
-        # q_sigma, [b, 32]
-        q_sigma = torch.sqrt(torch.exp(log_q_sigma2))
-        # create distribution of q_h
-        q_h_dist = torch.distributions.normal.Normal(loc=q_mu, scale=q_sigma)
-        # and then sample a scalar?
-        q_h = q_h_dist.sample()
-        # reshape to [b, 8, 2, 2]
-        q_h = q_h.view(batchsz, self.h_c, self.h_d, self.h_d)
+        q_h, q_mu, log_q_sigma2 = self.vae_h_mu_logsigma2(h)
 
         return q_h
 
-    def forward_decoder(self, h):
+    def forward_decoder(self, q_h):
         """
 
         :param h: it means q_h indeed
         :return:
         """
-        x_dist_logits = self.decoder(h)
-
-        # [-1~1]
-        x_hat = torch.sigmoid(x_dist_logits) * 2 - 1
+        x_hat = self.decoder(q_h)
 
         return x_hat
 

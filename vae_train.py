@@ -24,7 +24,7 @@ def main(args):
     np.random.seed(222)
 
     device = torch.device('cuda')
-    net = VAE(args.n_way, args.beta, args.imgc, args.imgsz)
+    net = VAE(args.n_way, args.beta, args.q_h_d, args.imgc, args.imgsz)
     net.to(device)
     print(net)
 
@@ -32,7 +32,7 @@ def main(args):
     vis = visdom.Visdom(env='vae')
     visualh = VisualH(vis)
     global_step = 0
-    vis.line([0.25], [0], win='train_loss', opts={'title': 'train_loss'})
+    vis.line([1.25], [0], win='train_loss', opts={'title': 'train_loss'})
     vis.line([[0,0]], [[0,0]], win='classify_acc', opts=dict(legend=['before', 'after'], showlegend=True,
                                                              title='class_acc'))
 
@@ -51,7 +51,7 @@ def main(args):
             loss, x_hat = net(spt_x, spt_y, qry_x, qry_y)
 
             global_step += 1
-            if global_step % 20 == 0:
+            if global_step % 50 == 0:
                 vis.line([loss.item()], [global_step], win='train_loss', update='append')
 
                 if global_step % 200 == 0:
@@ -101,7 +101,7 @@ def main(args):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--task_num', type=int, default=40, help='batchsz = task_num * (sptsz+qrysz)')
+    parser.add_argument('--task_num', type=int, default=4, help='batchsz = task_num * (sptsz+qrysz)')
     parser.add_argument('--meta_lr', type=float, default=1e-3, help='meta lr')
     parser.add_argument('--update_num', type=int, default=5, help='update num')
     parser.add_argument('--update_lr', type=float, default=0.01, help='update lr')
@@ -111,6 +111,7 @@ if __name__ == '__main__':
     parser.add_argument('--imgc', type=int, default=1)
     parser.add_argument('--imgsz', type=int, default=28)
     parser.add_argument('--beta', type=float, default=1.0, help='beta hyperparameters for vae')
+    parser.add_argument('--q_h_d', type=int, default=8, help='convert h to q_h by linear')
     parser.add_argument('--train_episode_num', type=int, default=5000)
     parser.add_argument('--test_episode_num', type=int, default=100)
     args = parser.parse_args()
