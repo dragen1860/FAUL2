@@ -60,8 +60,18 @@ def main(args):
             if global_step % 50 == 0:
                 vis.line([loss.item()], [global_step], win='train_loss', update='append')
 
+                # x_hat is composed of [spt_x_hat, qry_x_hat]
+                n = min(spt_x.size(0), 8)
+                comparison = torch.cat([spt_x.view(-1, args.imgc, args.imgsz, args.imgsz)[:n], x_hat[:n]])
+                vis.images(comparison, nrow=n, win='train_reconstruct',
+                           opts=dict(title='train_reconstruct%d'%global_step))
+
                 if global_step % 200 == 0:
                     print(global_step, loss.item())
+
+
+
+
 
         # clustering, visualization and classification
         db_test = DataLoader(
@@ -79,7 +89,6 @@ def main(args):
             h_spt0, h_spt1, h_qry0, h_qry1 = net.finetuning(spt_x, spt_y, qry_x, qry_y, update_num=25)
 
             visualh.update(h_spt0, h_spt1, h_qry0, h_qry1, spt_y, qry_y, global_step)
-
 
 
             acc0 = net.classify_train(h_spt0, spt_y, h_qry0, qry_y, use_h=True)
