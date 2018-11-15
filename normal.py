@@ -23,7 +23,7 @@ class Reshape(nn.Module):
         self.shape = args
 
     def forward(self, x):
-        return x.view(-1, self.shape)
+        return x.view(-1, *self.shape)
 
 class AE(nn.Module):
     """
@@ -55,21 +55,38 @@ class AE(nn.Module):
 
         if self.use_conv:
             raise  NotImplementedError
-        else:
-            # [b, imgc*imgsz*imgsz] => [b, q_h_d*2]
-            self.encoder = nn.Sequential(
-                Flatten(),
-                nn.Linear(img_dim, n_hidden),
-                nn.LeakyReLU(),
-                # nn.Dropout(1-keep_prob),
+        else: # fc
+            if self.is_vae:
+                # [b, imgc*imgsz*imgsz] => [b, q_h_d*2]
+                self.encoder = nn.Sequential(
+                    Flatten(),
+                    nn.Linear(img_dim, n_hidden),
+                    nn.LeakyReLU(),
+                    # nn.Dropout(1-keep_prob),
 
-                nn.Linear(n_hidden, n_hidden),
-                nn.LeakyReLU(),
-                # nn.Dropout(1-keep_prob),
+                    nn.Linear(n_hidden, n_hidden),
+                    nn.LeakyReLU(),
+                    # nn.Dropout(1-keep_prob),
 
-                nn.Linear(n_hidden, self.h_dim*2)
+                    nn.Linear(n_hidden, self.h_dim*2)
 
-            )
+                )
+            else:
+                # [b, imgc*imgsz*imgsz] => [b, q_h_d*2]
+                self.encoder = nn.Sequential(
+                    Flatten(),
+                    nn.Linear(img_dim, n_hidden),
+                    nn.LeakyReLU(),
+                    # nn.Dropout(1-keep_prob),
+
+                    nn.Linear(n_hidden, n_hidden),
+                    nn.LeakyReLU(),
+                    # nn.Dropout(1-keep_prob),
+
+                    nn.Linear(n_hidden, self.h_dim)
+
+                )
+
 
             # [b, q_h_d, 1, 1] => [b, imgc, imgsz, imgsz]
             self.decoder = nn.Sequential(
@@ -90,8 +107,8 @@ class AE(nn.Module):
 
         # reconstruct loss
         self.criteon = nn.BCELoss(reduction='sum')
-        self.optimizer = optim.Adam(list(self.encoder.parameters())+list(self.decoder.parameters()),
-                                    lr=self.lr)
+        # self.optimizer = optim.Adam(list(self.encoder.parameters())+list(self.decoder.parameters()),
+        #                             lr=self.lr)
 
         # hidden to n_way, based on h
         self.classifier = nn.Sequential(nn.Linear(self.h_dim, self.n_way))
@@ -155,14 +172,11 @@ class AE(nn.Module):
 
             likelihood = kld = None
 
-            loss = - self.criteon(x_hat, x) / batchsz
+            loss = self.criteon(x_hat, x) / batchsz
 
 
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
 
-        return loss, x_hat, likelihood, kld
+        return loss, loss, likelihood, kld
 
 
     def forward_encoder(self, x):
@@ -226,7 +240,7 @@ class AE(nn.Module):
         losses = []
         for step in range(update_num):
 
-            loss, x_hat, _, _ = self.forward(x_spt, y_spt, x_qry, y_qry)
+            loss, _, _, _ = self.forward(x_spt, y_spt, x_qry, y_qry)
 
             optimizer.zero_grad()
             loss.backward()

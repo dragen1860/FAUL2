@@ -55,7 +55,7 @@ class MetaAE(nn.Module):
 
             ]
 
-        self.learner = AELearner(config, args.imgc, args.imgsz, is_vae=args.is_vae)
+        self.learner = AELearner(config, args.imgc, args.imgsz, is_vae=args.is_vae, beta=args.beta)
         self.meta_optim = optim.Adam(self.learner.parameters(), lr=self.meta_lr)
 
         # hidden to n_way
@@ -79,7 +79,7 @@ class MetaAE(nn.Module):
             m.apply(weights_init)
 
 
-    def finetuning(self, x_spt, y_spt, x_qry, y_qry, update_num):
+    def finetuning(self, x_spt, y_spt, x_qry, y_qry, update_num, h_manifold):
         """
 
         :param x_spt: [task_num, sptsz, c_, h, w]
@@ -126,7 +126,9 @@ class MetaAE(nn.Module):
             h_qry0 = self.learner.forward_encoder(x_qry)
             h_qry1 = self.learner.forward_encoder(x_qry, fast_weights)
 
-        return h_spt0, h_spt1, h_qry0, h_qry1
+            x_manifold = self.learner.forward_decoder(h_manifold, fast_weights)
+
+        return h_spt0, h_spt1, h_qry0, h_qry1, x_manifold
 
     def classify_train(self, x_train, y_train, x_test, y_test, use_h=True, batchsz=32, train_step=50):
         """

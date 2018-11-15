@@ -10,7 +10,7 @@ class AELearner(nn.Module):
     This meta-based network is appropriate for ae and vae, supporting conv and fc.
     """
 
-    def __init__(self, config, imgc, imgsz, is_vae):
+    def __init__(self, config, imgc, imgsz, is_vae, beta):
         """
 
         :param config: network config file
@@ -23,6 +23,7 @@ class AELearner(nn.Module):
 
         self.config = config
         self.is_vae = is_vae
+        self.beta = beta
 
         # this dict contains all tensors needed to be optimized
         self.vars = nn.ParameterList()
@@ -54,6 +55,10 @@ class AELearner(nn.Module):
                 self.vars.append(w)
                 # [ch_out]
                 self.vars.append(nn.Parameter(torch.zeros(param[0])))
+
+            elif name is 'hidden':
+                # to separate the variable from encoder.
+                self.hidden_var_idx = len(self.vars)
 
             elif name in ['tanh', 'relu', 'hidden', 'upsample', 'avg_pool2d', 'max_pool2d',
                           'flatten', 'reshape', 'leakyrelu', 'sigmoid']:
@@ -188,7 +193,7 @@ class AELearner(nn.Module):
                 torch.pow(q_sigma, 2) -
                 torch.log(1e-8 + torch.pow(q_sigma, 2)) - 1
             ).sum() / input.size(0)
-            elbo = likelihood - 1.0 * kld
+            elbo = likelihood - self.beta * kld
             loss = - elbo
 
             return x, loss, likelihood, kld
@@ -275,6 +280,7 @@ class AELearner(nn.Module):
             else:
                 raise NotImplementedError
 
+        assert idx == self.hidden_var_idx
 
         return x
 
@@ -301,7 +307,7 @@ class AELearner(nn.Module):
         decoder_config = self.config[hidden_loc+1:]
 
 
-        idx = 0
+        idx = self.hidden_var_idx
         x = q_h
         for name, param in decoder_config:
             if name is 'conv2d':
@@ -344,7 +350,7 @@ class AELearner(nn.Module):
             else:
                 raise NotImplementedError
 
-
+        assert  idx == len(self.vars)
         return x
 
     def zero_grad(self, vars=None):
