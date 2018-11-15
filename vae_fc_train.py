@@ -101,8 +101,11 @@ def main(args):
                 if global_step % 300 == 0:
                     print(global_step, loss.item(), likelihood.item(), kld.item())
 
+                # can not use net.decoder directly!!!
+                train_manifold = net.forward_decoder(q_h_manifold)
+                vis.images(train_manifold, win='train_manifold', nrow=args.q_h_nrow,
+                           opts=dict(title='train_manifold:%d' % epoch))
 
-        
 
 
         # clustering, visualization and classification
@@ -118,8 +121,8 @@ def main(args):
 
             # we can get the representation before first update, after k update
             # and test the representation on merged(test_spt, test_qry) set
-            h_spt0, h_spt1, h_qry0, h_qry1, x_manifold = net.finetuning(spt_x, spt_y, qry_x, qry_y,
-                                                                        update_num=5, q_h_manifold=q_h_manifold)
+            h_spt0, h_spt1, h_qry0, h_qry1, test_manifold = net.finetuning(spt_x, spt_y, qry_x, qry_y,
+                                                                        update_num=25, q_h_manifold=q_h_manifold)
 
             visualh.update(h_spt0, h_spt1, h_qry0, h_qry1, spt_y, qry_y, global_step)
 
@@ -132,7 +135,7 @@ def main(args):
 
             # manifold
             # can not use net.decoder directly!!!
-            vis.images(x_manifold, win='test_manifold', nrow=args.q_h_nrow,
+            vis.images(test_manifold, win='test_manifold', nrow=args.q_h_nrow,
                        opts=dict(title='test_manifold:%d' % epoch))
 
 
