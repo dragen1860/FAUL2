@@ -9,13 +9,13 @@ from sys import platform as _platform
 from six.moves import urllib
 
 
-viz = Visdom()
+viz = Visdom(env='vis_demo')
 
 assert viz.check_connection(timeout_seconds=3), \
     'No connection could be formed quickly'
 
 
-if False:
+if True:
 
     textwindow = viz.text('Hello World!')
 

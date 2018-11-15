@@ -17,7 +17,7 @@ parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='enables CUDA training')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
-parser.add_argument('--log-interval', type=int, default=100, metavar='N',
+parser.add_argument('--log-interval', type=int, default=400, metavar='N',
                     help='how many batches to wait before logging training status')
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -47,8 +47,8 @@ class VAE(nn.Module):
         super(VAE, self).__init__()
 
 
-        self.fc21 = nn.Linear(32*4*4, 20)
-        self.fc22 = nn.Linear(32*4*4, 20)
+        self.mu_net = nn.Linear(32*4*4, 20)
+        self.sigma_net = nn.Linear(32*4*4, 20)
 
         # [b, imgc, imgsz, imgsz] => [b, h_c, h_d, h_d]
         self.encoder = nn.Sequential(
@@ -72,7 +72,10 @@ class VAE(nn.Module):
 
         inp = torch.Tensor(2, 1, 28, 28)
         h = self.encoder(inp)
-        print(h.shape)
+        print('h:', h.shape)
+        h = h.view(2, -1)
+        q_mu, q_log_sigma2 = self.mu_net(h), self.sigma_net(h)
+        print('mu:', q_mu.shape, 'sigma:', q_log_sigma2.shape)
 
 
     def encode(self, x):
@@ -81,7 +84,7 @@ class VAE(nn.Module):
 
         h1 = h1.view(h1.size(0), -1)
 
-        return self.fc21(h1), self.fc22(h1)
+        return self.mu_net(h1), self.sigma_net(h1)
 
     def reparameterize(self, mu, logvar):
         std = torch.exp(0.5 * logvar)
@@ -101,24 +104,40 @@ class VAE(nn.Module):
         return self.decode(z), mu, logvar
 
 
+
+    def loss_function(self, recon_x, x, mu, logvar):
+        """
+
+        :param recon_x:
+        :param x:
+        :param mu:
+        :param logvar: log(sigma^2)
+        :return:
+        """
+
+        # BCE = F.binary_cross_entropy_with_logits(recon_x, x, reduction='sum')
+        batchsz = x.size(0)
+
+        # convert element-wise to image-wise
+        BCE = criteon(recon_x, x)  / batchsz
+        # print(recon_x.shape)
+
+        # see Appendix B from VAE paper:
+        # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
+        # https://arxiv.org/abs/1312.6114
+        # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
+        KLD = - 0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp()) / batchsz
+
+        return BCE + KLD, BCE, KLD
+
+
+
+
 model = VAE().to(device)
 optimizer = optim.Adam(model.parameters(), lr=1e-3)
 criteon = nn.BCEWithLogitsLoss(reduction='sum')
 
-# Reconstruction + KL divergence losses summed over all elements and batch
-def loss_function(recon_x, x, mu, logvar):
-    # BCE = F.binary_cross_entropy_with_logits(recon_x, x, reduction='sum')
 
-    BCE = criteon(recon_x, x)
-    # print(recon_x.shape)
-
-    # see Appendix B from VAE paper:
-    # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
-    # https://arxiv.org/abs/1312.6114
-    # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
-    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-
-    return BCE + KLD, BCE
 
 
 def train(epoch, vis):
@@ -131,7 +150,7 @@ def train(epoch, vis):
 
         optimizer.zero_grad()
         recon_batch, mu, logvar = model(data)
-        loss, loss_reconstruct = loss_function(recon_batch, data, mu, logvar)
+        loss, loss_ll, loss_kl = model.loss_function(recon_batch, data, mu, logvar)
         loss.backward()
         train_loss += loss.item()
         optimizer.step()
@@ -142,7 +161,7 @@ def train(epoch, vis):
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader),
-                       loss.item() / len(data)), loss_reconstruct.item()/len(data))
+                       loss.item() / len(data)), loss_ll.item(), loss_kl.item())
 
     print('====> Epoch: {} Average loss: {:.4f}'.format(
         epoch, train_loss / len(train_loader.dataset)))
@@ -155,26 +174,33 @@ def test(epoch, vis):
         for i, (data, _) in enumerate(test_loader):
             data = data.to(device)
             recon_batch, mu, logvar = model(data)
-            test_loss += loss_function(recon_batch, data, mu, logvar)[0].item()
+            test_loss += model.loss_function(recon_batch, data, mu, logvar)[0].item()
             if i == 0:
                 n = min(data.size(0), 8)
                 comparison = torch.cat([data[:n],
-                                        recon_batch.view(args.batch_size, 1, 28, 28)[:n]])
-                save_image(comparison.cpu(),
-                           'results/reconstruction_' + str(epoch) + '.png', nrow=n)
+                                        torch.sigmoid(recon_batch.view(args.batch_size, 1, 28, 28)[:n])])
+                # save_image(comparison.cpu(),
+                #            'results/reconstruction_' + str(epoch) + '.png', nrow=n)
+
+                vis.images(comparison, win='test_reconstruction',
+                           opts=dict(title='test_reconstruction:%d'%epoch))
 
     test_loss /= len(test_loader.dataset)
     print('====> Test set loss: {:.4f}'.format(test_loss))
 
 
 if __name__ == "__main__":
-    vis = visdom.Visdom(env='vae')
+    vis = visdom.Visdom(env='vae_test2')
 
     for epoch in range(1, args.epochs + 1):
         train(epoch, vis)
         test(epoch, vis)
         with torch.no_grad():
             sample = torch.randn(64, 20).to(device)
-            sample = model.decode(sample).cpu()
-            save_image(sample.view(64, 1, 28, 28),
-                       'results/sample_' + str(epoch) + '.png')
+            sample = model.decode(sample).cpu().view(64, 1, 28, 28)
+
+            sample = torch.sigmoid(sample)
+            # save_image(sample.view(64, 1, 28, 28),
+            #            'results/sample_' + str(epoch) + '.png')
+            vis.images(sample, win='test_sample',
+                       opts=dict(title='test_sample:%d' % epoch))
