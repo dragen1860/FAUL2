@@ -11,22 +11,12 @@ from    learner import AELearner
 
 class MetaAE(nn.Module):
     """
-    Meta version of vae or ae.
+    Meta version of vae or ae, supporting fc and conv.
     """
     def __init__(self, args):
         """
 
-        :param n_way:
-        :param k_spt:
-        :param k_qry:
-        :param task_num:
-        :param update_num:
-        :param meta_lr:
-        :param update_lr:
-        :param imgc:
-        :param imgsz:
-        :param h_dim: dim of q_h
-        :param is_vae: ae or vae
+        :param args:
         """
         super(MetaAE, self).__init__()
 
@@ -39,27 +29,31 @@ class MetaAE(nn.Module):
         self.update_num = args.update_num
         self.img_dim = args.imgc * args.imgsz * args.imgsz
         self.is_vae = args.is_vae
+        self.use_conv = args.use_conv
 
 
-        config = [
-            ('flatten', []),
-            ('linear', [500, self.img_dim]),
-            ('leakyrelu', [0.01, True]),
-            ('linear', [500, 500]),
-            ('leakyrelu', [0.01, True]),
-            ('linear', [2* args.h_dim, 500]),
+        if self.use_conv:
+            raise NotImplementedError
+        else:
+            config = [
+                ('flatten', []),
+                ('linear', [500, self.img_dim]),
+                ('leakyrelu', [0.01, True]),
+                ('linear', [500, 500]),
+                ('leakyrelu', [0.01, True]),
+                ('linear', [2* args.h_dim, 500]),
 
-            ('hidden', []),
+                ('hidden', []),
 
-            ('linear', [args.h_dim, 500]),
-            ('relu', [True]),
-            ('linear', [500, 500]),
-            ('relu', [True]),
-            ('linear', [500, self.img_dim]),
-            ('sigmoid',[]),
-            ('deflatten', [args.imgc, args.imgsz, args.imgsz])
+                ('linear', [args.h_dim, 500]),
+                ('relu', [True]),
+                ('linear', [500, 500]),
+                ('relu', [True]),
+                ('linear', [500, self.img_dim]),
+                ('sigmoid',[]),
+                ('reshape', [args.imgc, args.imgsz, args.imgsz])
 
-        ]
+            ]
 
         self.learner = AELearner(config, args.imgc, args.imgsz, is_vae=args.is_vae)
         self.meta_optim = optim.Adam(self.learner.parameters(), lr=self.meta_lr)

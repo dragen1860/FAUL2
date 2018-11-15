@@ -7,7 +7,7 @@ from    torch.nn import functional as F
 
 class AELearner(nn.Module):
     """
-    This meta-based network is appropriate for ae and vae.
+    This meta-based network is appropriate for ae and vae, supporting conv and fc.
     """
 
     def __init__(self, config, imgc, imgsz, is_vae):
@@ -56,7 +56,7 @@ class AELearner(nn.Module):
                 self.vars.append(nn.Parameter(torch.zeros(param[0])))
 
             elif name in ['tanh', 'relu', 'hidden', 'upsample', 'avg_pool2d', 'max_pool2d',
-                          'flatten', 'deflatten', 'leakyrelu', 'sigmoid']:
+                          'flatten', 'reshape', 'leakyrelu', 'sigmoid']:
                 continue
             else:
                 raise NotImplementedError
@@ -95,7 +95,7 @@ class AELearner(nn.Module):
             elif name is 'max_pool2d':
                 tmp = 'max_pool2d:(k:%d, stride:%d, padding:%d)'%(param[0], param[1], param[2])
                 info += tmp + '\n'
-            elif name in ['flatten', 'tanh', 'relu', 'hidden', 'upsample', 'deflatten', 'sigmoid']:
+            elif name in ['flatten', 'tanh', 'relu', 'hidden', 'upsample', 'reshape', 'sigmoid']:
                 tmp = name + ':' + str(tuple(param))
                 info += tmp + '\n'
             else:
@@ -138,7 +138,7 @@ class AELearner(nn.Module):
                 idx += 2
             elif name is 'flatten':
                 x = x.view(x.size(0), -1)
-            elif name is 'deflatten':
+            elif name is 'reshape':
                 # [b, 8] => [b, 2, 2, 2]
                 x = x.view(x.size(0), *param)
             elif name is 'relu':
@@ -239,7 +239,7 @@ class AELearner(nn.Module):
                 idx += 2
             elif name is 'flatten':
                 x = x.view(x.size(0), -1)
-            elif name is 'deflatten':
+            elif name is 'reshape':
                 # [b, 8] => [b, 2, 2, 2]
                 x = x.view(x.size(0), *param)
             elif name is 'relu':
@@ -320,7 +320,7 @@ class AELearner(nn.Module):
                 idx += 2
             elif name is 'flatten':
                 x = x.view(x.size(0), -1)
-            elif name is 'deflatten':
+            elif name is 'reshape':
                 # [b, 8] => [b, 2, 2, 2]
                 x = x.view(x.size(0), *param)
             elif name is 'hidden':

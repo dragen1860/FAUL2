@@ -37,7 +37,9 @@ class AE(nn.Module):
         """
         super(AE, self).__init__()
 
-
+        self.lr = args.meta_lr
+        self.finetuning_lr = args.finetuning_lr
+        self.classify_lr = args.classify_lr
         self.n_way = args.n_way
         self.beta = args.beta
         self.h_dim = args.h_dim
@@ -56,6 +58,7 @@ class AE(nn.Module):
         else:
             # [b, imgc*imgsz*imgsz] => [b, q_h_d*2]
             self.encoder = nn.Sequential(
+                Flatten(),
                 nn.Linear(img_dim, n_hidden),
                 nn.LeakyReLU(),
                 # nn.Dropout(1-keep_prob),
@@ -79,16 +82,20 @@ class AE(nn.Module):
                 # nn.Dropout(1-keep_prob),
 
                 nn.Linear(n_hidden, img_dim),
-                nn.Sigmoid()
+                nn.Sigmoid(),
+
+                Reshape(self.imgc, self.imgsz, self.imgsz)
             )
 
 
         # reconstruct loss
         self.criteon = nn.BCELoss(reduction='sum')
+        self.optimizer = optim.Adam(list(self.encoder.parameters())+list(self.decoder.parameters()),
+                                    lr=self.lr)
 
-
-        # hidden to n_way, based on q_h
+        # hidden to n_way, based on h
         self.classifier = nn.Sequential(nn.Linear(self.h_dim, self.n_way))
+
 
         print([2, self.imgc, self.imgsz, self.imgsz], '>:', [2, self.h_dim])
 
@@ -96,7 +103,7 @@ class AE(nn.Module):
 
     def forward(self, x_spt, y_spt, x_qry, y_qry):
         """
-
+        forward is for training. To get ae output, you need self.forward_decoder(self.forward_encoder(x))
         :param x_spt: [b, sptsz, 1, 32 ,32]
         :param y_spt:
         :param x_qry: [b, qrysz, 1, 32, 32]
@@ -110,8 +117,6 @@ class AE(nn.Module):
 
         batchsz = x.size(0)
 
-        # flatten
-        x = x.view(batchsz, -1)
 
         if self.is_vae:
             # splitting along dim=1
@@ -153,6 +158,9 @@ class AE(nn.Module):
             loss = - self.criteon(x_hat, x) / batchsz
 
 
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
 
         return loss, x_hat, likelihood, kld
 
@@ -213,7 +221,8 @@ class AE(nn.Module):
         h_qry0 = self.forward_encoder(x_qry)
 
 
-        optimizer = optim.SGD(self.parameters(), lr=1e-3)
+        optimizer = optim.SGD(list(self.encoder.parameters())+list(self.decoder.parameters()),
+                              lr=self.finetuning_lr)
         losses = []
         for step in range(update_num):
 
@@ -273,7 +282,7 @@ class AE(nn.Module):
         self.classify_reset()
 
         criteon = nn.CrossEntropyLoss()
-        optimizer = optim.SGD(self.classifier.parameters(), lr=1e-4)
+        optimizer = optim.SGD(self.classifier.parameters(), lr=self.classify_lr)
 
         if not use_h: # given image
             # stop gradient on hidden layer
