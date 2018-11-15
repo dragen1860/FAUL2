@@ -4,6 +4,7 @@ from    torch import nn
 from    torch.utils.data import DataLoader
 
 from    meta import MetaAE
+from    normal import AE
 from    mnistNShot import MnistNShot
 
 from    visualization import VisualH
@@ -25,7 +26,7 @@ def main(args):
     if args.is_meta:
         net = MetaAE(args)
     else:
-        net =
+        net = AE(args)
     net.to(device)
 
     task_name = ''.join('meta' if args.is_meta else 'normal',
