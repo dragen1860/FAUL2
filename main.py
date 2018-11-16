@@ -13,10 +13,61 @@ from    mnistNShot import MnistNShot
 from    visualization import VisualH
 
 
+def update_args(exp, args):
 
+
+    if exp == 'meta-conv-ae':
+        args.is_vae = False
+        args.is_meta = True
+        args.use_conv = True
+        args.task_num = 4
+        args.meta_lr = 1e-3
+        args.update_num = 5
+        args.update_lr = 0.01
+        args.finetuning_lr = 0.01
+        args.finetuning_steps = 15
+        args.classify_steps = 10
+        args.classify_lr = 0.01
+        args.h_dim = 8*2*2
+
+    elif exp == 'meta-conv-vae':
+        args.is_vae = True
+        args.is_meta = True
+        args.use_conv = True
+        args.task_num = 4
+        args.meta_lr = 1e-3
+        args.update_num = 5
+        args.update_lr = 0.01
+        args.finetuning_lr = 0.01
+        args.finetuning_steps = 15
+        args.classify_steps = 10
+        args.classify_lr = 0.01
+        args.h_dim = 2
+
+    elif exp == 'meta-fc-ae':
+        args.is_vae = False
+        args.is_meta = True
+        args.use_conv = False
+        args.task_num = 4
+        args.meta_lr = 1e-3
+        args.update_num = 5
+        args.update_lr = 0.01
+        args.finetuning_lr = 0.01
+        args.finetuning_steps = 15
+        args.classify_steps = 10
+        args.classify_lr = 0.01
+        args.h_dim = 2
+
+    else:
+        print('Wrong Exp name:', exp)
+        raise NotImplementedError
+
+    return args
 
 
 def main(args):
+
+    args = update_args('meta-fc-ae', args)
 
     torch.manual_seed(222)
     torch.cuda.manual_seed_all(222)

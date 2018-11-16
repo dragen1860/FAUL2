@@ -34,7 +34,48 @@ class MetaAE(nn.Module):
 
 
         if self.use_conv:
-            raise NotImplementedError
+            if self.is_vae:
+                config = [
+                    ('conv2d', [16, 1, 3, 3, 3, 1]),  # the first
+                    ('relu', [True]),
+                    ('max_pool2d', [2, 2, 0]),
+                    ('conv2d', [8, 16, 3, 3, 2, 1]),  #
+                    ('relu', [True]),
+                    ('max_pool2d', [2, 1, 0]),
+                    ('flatten', []),
+
+                    ('hidden', []),  # hidden variable
+
+                    # [ch_out, ch_in]
+                    ('reshape', [8, 2, 2]),
+                    ('convt2d', [8, 16, 3, 3, 2, 0]),  # defactor1
+                    ('relu', [True]),
+                    ('convt2d', [16, 8, 5, 5, 3, 1]),
+                    ('relu', [True]),
+                    ('convt2d', [8, 1, 2, 2, 2, 1]),
+                    ('tanh', [])
+                ]
+            else:
+                config = [
+                    ('conv2d', [16, 1, 3, 3, 3, 1]),  # the first
+                    ('relu', [True]),
+                    ('max_pool2d', [2, 2, 0]),
+                    ('conv2d', [8, 16, 3, 3, 2, 1]),  #
+                    ('relu', [True]),
+                    ('max_pool2d', [2, 1, 0]),
+                    ('flatten', []), # [b, 8, 2, 2] => [b, 32]
+
+                    ('hidden', []),  # hidden variable
+
+                    ('reshape', [8, 2, 2]), # [b, 32] => [b, 8, 2, 2]
+                    # [ch_out, ch_in]
+                    ('convt2d', [8, 16, 3, 3, 2, 0]),  # defactor1
+                    ('relu', [True]),
+                    ('convt2d', [16, 8, 5, 5, 3, 1]),
+                    ('relu', [True]),
+                    ('convt2d', [8, 1, 2, 2, 2, 1]),
+                    ('tanh', [])
+                ]
         else:
             if self.is_vae:
                 config = [
