@@ -21,6 +21,7 @@ class MetaAE(nn.Module):
         super(MetaAE, self).__init__()
 
         self.update_lr = args.update_lr
+        self.classify_lr = args.classify_lr
         self.meta_lr = args.meta_lr
         self.n_way = args.n_way
         self.k_spt = args.k_spt
@@ -35,25 +36,46 @@ class MetaAE(nn.Module):
         if self.use_conv:
             raise NotImplementedError
         else:
-            config = [
-                ('flatten', []),
-                ('linear', [500, self.img_dim]),
-                ('leakyrelu', [0.01, True]),
-                ('linear', [500, 500]),
-                ('leakyrelu', [0.01, True]),
-                ('linear', [2* args.h_dim, 500]),
+            if self.is_vae:
+                config = [
+                    ('flatten', []),
+                    ('linear', [500, self.img_dim]),
+                    ('leakyrelu', [0.01, True]),
+                    ('linear', [500, 500]),
+                    ('leakyrelu', [0.01, True]),
+                    ('linear', [2* args.h_dim, 500]),
 
-                ('hidden', []),
+                    ('hidden', []),
 
-                ('linear', [args.h_dim, 500]),
-                ('relu', [True]),
-                ('linear', [500, 500]),
-                ('relu', [True]),
-                ('linear', [500, self.img_dim]),
-                ('sigmoid',[]),
-                ('reshape', [args.imgc, args.imgsz, args.imgsz])
+                    ('linear', [500, args.h_dim]),
+                    ('relu', [True]),
+                    ('linear', [500, 500]),
+                    ('relu', [True]),
+                    ('linear', [self.img_dim, 500]),
+                    ('sigmoid',[]),
+                    ('reshape', [args.imgc, args.imgsz, args.imgsz])
 
-            ]
+                ]
+            else:
+                config = [
+                    ('flatten', []),
+                    ('linear', [500, self.img_dim]),
+                    ('leakyrelu', [0.01, True]),
+                    ('linear', [500, 500]),
+                    ('leakyrelu', [0.01, True]),
+                    ('linear', [args.h_dim, 500]),
+
+                    ('hidden', []),
+
+                    ('linear', [500, args.h_dim]),
+                    ('relu', [True]),
+                    ('linear', [500, 500]),
+                    ('relu', [True]),
+                    ('linear', [self.img_dim, 500]),
+                    ('sigmoid',[]),
+                    ('reshape', [args.imgc, args.imgsz, args.imgsz])
+
+                ]
 
         self.learner = AELearner(config, args.imgc, args.imgsz, is_vae=args.is_vae, beta=args.beta)
         self.meta_optim = optim.Adam(self.learner.parameters(), lr=self.meta_lr)
@@ -61,7 +83,6 @@ class MetaAE(nn.Module):
         # hidden to n_way
         self.classifier = nn.Sequential(nn.Linear(args.h_dim, self.n_way))
 
-        print(self.learner)
 
 
     def classify_reset(self):
@@ -79,7 +100,7 @@ class MetaAE(nn.Module):
             m.apply(weights_init)
 
 
-    def finetuning(self, x_spt, y_spt, x_qry, y_qry, update_num, h_manifold):
+    def finetuning(self, x_spt, y_spt, x_qry, y_qry, update_num, h_manifold=None):
         """
 
         :param x_spt: [task_num, sptsz, c_, h, w]
@@ -87,6 +108,7 @@ class MetaAE(nn.Module):
         :param x_qry:
         :param y_qry:
         :param update_num: update for fine-tuning
+        :param h_manifold: [b, 2] manifold of h
         :return:
         """
         sptsz, c_, h, w = x_spt.size()
@@ -126,7 +148,10 @@ class MetaAE(nn.Module):
             h_qry0 = self.learner.forward_encoder(x_qry)
             h_qry1 = self.learner.forward_encoder(x_qry, fast_weights)
 
-            x_manifold = self.learner.forward_decoder(h_manifold, fast_weights)
+            if h_manifold:
+                x_manifold = self.learner.forward_decoder(h_manifold, fast_weights)
+            else:
+                x_manifold = None
 
         return h_spt0, h_spt1, h_qry0, h_qry1, x_manifold
 
@@ -146,7 +171,7 @@ class MetaAE(nn.Module):
         self.classify_reset()
 
         criteon = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(self.classifier.parameters(), lr=1e-4)
+        optimizer = optim.SGD(self.classifier.parameters(), lr=self.classify_lr)
 
         if not use_h: # given image
             # stop gradient on hidden layer
@@ -196,10 +221,24 @@ class MetaAE(nn.Module):
         return accs
 
 
+    def forward_encoder(self, x):
+        """
+
+        :param x:
+        :return:
+        """
+        return self.learner.forward_encoder(x)
+
+    def forward_decoder(self, h):
+        """
+
+        :param h:
+        :return:
+        """
+        return self.learner.forward_decoder(h)
 
 
-
-    def forward(self, x_spt, y_spt, x_qry, y_qry, training=True):
+    def forward(self, x_spt, y_spt, x_qry, y_qry):
         """
 
         :param x_spt: [task_num, setsz, c_, h, w]
@@ -265,7 +304,6 @@ class MetaAE(nn.Module):
 
             # this is the loss and accuracy after the first update
             pred_q, loss_q, likelihood_q, kld_q = self.learner(x_qry[i], fast_weights)
-
             update_statistic(loss, likelihood, kld, loss_q, likelihood_q, kld_q, 1)
 
             for k in range(1, self.update_num):
@@ -283,26 +321,46 @@ class MetaAE(nn.Module):
                 update_statistic(loss, likelihood, kld, loss_q, likelihood_q, kld_q, k+1)
 
 
-        # get mean loss across tasks on each step, ignore the loss before update on spt.
-        # obj = [[step0_task1, step0_task2,....], [step2,...]]
-        losses_p = [torch.cat(step).mean() for step in losses_p[1:]]
-        likelihoods_p = [torch.cat(step).mean() for step in likelihoods_p[1:]]
-        klds_p = [torch.cat(step).mean() for step in klds_p[1:]]
-        losses_q = [torch.cat(step).mean() for step in losses_q]
-        likelihoods_q = [torch.cat(step).mean() for step in likelihoods_q]
-        klds_q = [torch.cat(step).mean() for step in klds_q]
+        if self.is_vae:
+            # get mean loss across tasks on each step, ignore the loss before update on spt.
+            # obj = [[step0_task1, step0_task2,....], [step2,...]]
+            # 0-dim tensor can not be cated, only be stacked!
+            losses_p = [torch.stack(step).mean() for step in losses_p[1:]]
+            likelihoods_p = [torch.stack(step).mean() for step in likelihoods_p[1:]]
+            klds_p = [torch.stack(step).mean() for step in klds_p[1:]]
+            losses_q = [torch.stack(step).mean() for step in losses_q]
+            likelihoods_q = [torch.stack(step).mean() for step in likelihoods_q]
+            klds_q = [torch.stack(step).mean() for step in klds_q]
 
-        # end of all tasks
-        loss_optim = losses_q[-1]
+            # end of all tasks
+            # scalar tensor.
+            loss_optim = losses_q[-1]
 
-        self.meta_optim.zero_grad()
-        loss_optim.backward()
-        # print('meta update')
-        # for p in self.learner.parameters()[:5]:
-        # 	print(torch.norm(p).item())
-        self.meta_optim.step()
+            self.meta_optim.zero_grad()
+            loss_optim.backward()
+            # print('meta update')
+            # for p in self.learner.parameters()[:5]:
+            # 	print(torch.norm(p).item())
+            self.meta_optim.step()
 
-        return loss_optim, losses_q, likelihoods_q, klds_q
+            return loss_optim, losses_q, likelihoods_q, klds_q
+
+        else: # for ae, likelihood and klds= None
+            losses_p = [torch.stack(step).mean() for step in losses_p[1:]]
+            losses_q = [torch.stack(step).mean() for step in losses_q]
+
+            # end of all tasks
+            # scalar tensor.
+            loss_optim = losses_q[-1]
+
+            self.meta_optim.zero_grad()
+            loss_optim.backward()
+            # print('meta update')
+            # for p in self.learner.parameters()[:5]:
+            # 	print(torch.norm(p).item())
+            self.meta_optim.step()
+
+            return loss_optim, losses_q, None, None
 
 
 

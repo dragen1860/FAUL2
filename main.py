@@ -2,15 +2,15 @@ import  argparse
 import  torch
 from    torch import optim
 from    torch.utils.data import DataLoader
+import  numpy as np
+from    matplotlib import pyplot as plt
+import  visdom
 
 from    meta import MetaAE
 from    normal import AE
 from    mnistNShot import MnistNShot
 
 from    visualization import VisualH
-import  numpy as np
-from    matplotlib import pyplot as plt
-import  visdom
 
 
 
@@ -24,11 +24,13 @@ def main(args):
 
     device = torch.device('cuda')
     if args.is_meta:
+        # optimizer has been embedded in model.
         net = MetaAE(args)
     else:
         net = AE(args)
         optimizer = optim.Adam(net.parameters(), lr=args.meta_lr)
-        print(net)
+
+    print(net)
     net.to(device)
 
     task_name = ''.join(['meta' if args.is_meta else 'normal','-',
@@ -40,7 +42,7 @@ def main(args):
     vis = visdom.Visdom(env=task_name)
     visualh = VisualH(vis)
     global_step = 0
-    vis.line([[130,120,13]], [0], win='train_loss', opts=dict(
+    vis.line([[0,0,0]], [0], win='train_loss', opts=dict(
                                                     title='train_loss',
                                                     legend=['loss', '-likelihood', 'kld'])
              )
@@ -48,17 +50,18 @@ def main(args):
                                                              showlegend=True,
                                                              title='class_acc'))
 
+    if args.h_dim == 2:
+        # borrowed from https://github.com/fastforwardlabs/vae-tf/blob/master/plot.py
+        h_range = np.rollaxis(np.mgrid[args.h_range:-args.h_range:args.h_nrow * 1j,
+                                args.h_range:-args.h_range:args.h_nrow * 1j], 0, 3)
+        # [b, q_h]
+        h_manifold = torch.from_numpy(h_range.reshape([-1, 2])).to(device).float()
+        print('h_manifold:', h_manifold.shape)
+    else:
+        h_manifold = None
 
 
-    # borrowed from https://github.com/fastforwardlabs/vae-tf/blob/master/plot.py
-    h_range = np.rollaxis(np.mgrid[args.h_range:-args.h_range:args.h_nrow * 1j,
-                            args.h_range:-args.h_range:args.h_nrow * 1j], 0, 3)
-    # [b, q_h]
-    h_manifold = torch.from_numpy(h_range.reshape([-1, 2])).to(device).float()
-    print('h_manifold:', h_manifold.shape)
-
-
-    for epoch in range(1000):
+    for epoch in range(args.epoch):
 
         # 1. train
         db_train = DataLoader(
@@ -76,19 +79,32 @@ def main(args):
 
                 global_step += 1
                 if global_step % 100 == 0:
-                    # print(losses_q, likelihoods_q, klds_q)
-                    vis.line([[losses_q[-1].item(), -likelihoods_q[-1].item(), klds_q[-1].item()]],
-                             [global_step], win='train_loss', update='append')
+
+                    if args.is_vae:
+                        # print(losses_q, likelihoods_q, klds_q)
+                        vis.line([[losses_q[-1].item(), -likelihoods_q[-1].item(), klds_q[-1].item()]],
+                                 [global_step], win='train_loss', update='append')
+                    else:
+                        # print(losses_q, likelihoods_q, klds_q)
+                        vis.line([[losses_q[-1].item(), 0, 0]],
+                                 [global_step], win='train_loss', update='append')
+
 
                     if global_step % 500 == 0:
-                        print(global_step, torch.stack(losses_q).cpu().numpy().astype(np.float16))
-                        print(torch.stack(likelihoods_q).cpu().numpy().astype(np.float16))
-                        print(torch.stack(klds_q).cpu().numpy().astype(np.float16))
+                        if args.is_vae:
+                            print(global_step, torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
+                            print(torch.stack(likelihoods_q).detach().cpu().numpy().astype(np.float16))
+                            print(torch.stack(klds_q).cpu().detach().numpy().astype(np.float16))
+                        else:
+                            print(global_step, torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
 
-                    # can not use net.decoder directly!!!
-                    train_manifold = net.forward_decoder(h_manifold)
-                    vis.images(train_manifold, win='train_manifold', nrow=args.q_h_nrow,
-                               opts=dict(title='train_manifold:%d' % epoch))
+                    if args.h_dim == 2:
+                        # can not use net.decoder directly!!!
+                        train_manifold = net.forward_decoder(h_manifold)
+                        vis.images(train_manifold, win='train_manifold', nrow=args.h_nrow,
+                                                    opts=dict(title='train_manifold:%d' % epoch))
+
+
             else: # for normal vae/ae
                 loss_optim, loss_optim, likelihood, kld = net(spt_x, spt_y, qry_x, qry_y)
                 optimizer.zero_grad()
@@ -104,11 +120,11 @@ def main(args):
                         vis.line([[loss_optim.item(), -likelihood.item(), kld.item()]],
                                  [global_step], win='train_loss', update='append')
 
-
-                    # can not use net.decoder directly!!!
-                    train_manifold = net.forward_decoder(h_manifold)
-                    vis.images(train_manifold, win='train_manifold', nrow=args.h_nrow,
-                               opts=dict(title='train_manifold:%d' % epoch))
+                    if args.h_dim == 2:
+                        # can not use net.decoder directly!!!
+                        train_manifold = net.forward_decoder(h_manifold)
+                        vis.images(train_manifold, win='train_manifold', nrow=args.h_nrow,
+                                                opts=dict(title='train_manifold:%d' % epoch))
 
         # clustering, visualization and classification
         db_test = DataLoader(
@@ -121,6 +137,7 @@ def main(args):
             assert spt_x.size(0) == 1
             spt_x, spt_y, qry_x, qry_y = spt_x.squeeze(0), spt_y.squeeze(0), qry_x.squeeze(0), qry_y.squeeze(0)
 
+
             # we can get the representation before first update, after k update
             # and test the representation on merged(test_spt, test_qry) set
             h_spt0, h_spt1, h_qry0, h_qry1, test_manifold = net.finetuning(spt_x, spt_y, qry_x, qry_y,
@@ -130,16 +147,16 @@ def main(args):
 
 
 
-            acc0 = net.classify_train(h_spt0, spt_y, h_qry0, qry_y, use_h=True)
-            acc1 = net.classify_train(h_spt1, spt_y, h_qry1, qry_y, use_h=True)
+            acc0 = net.classify_train(h_spt0, spt_y, h_qry0, qry_y, use_h=True, train_step=args.classify_steps)
+            acc1 = net.classify_train(h_spt1, spt_y, h_qry1, qry_y, use_h=True, train_step=args.classify_steps)
             print(global_step, batchidx, 'classification:\n', acc0, '\n', acc1)
 
             vis.line([[acc0.max(), acc1.max()]], [global_step], win='classify_acc', update='append')
 
-            # manifold
-            # can not use net.decoder directly!!!
-            vis.images(test_manifold, win='test_manifold', nrow=args.h_nrow,
-                       opts=dict(title='test_manifold:%d' % epoch))
+            if args.h_dim == 2:
+                # can not use net.decoder directly!!!
+                vis.images(test_manifold, win='test_manifold', nrow=args.h_nrow,
+                           opts=dict(title='test_manifold:%d' % epoch))
 
             break
 
@@ -159,8 +176,8 @@ def main(args):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--is_vae', action='store_true', default=False, help='ae or vae')
-    parser.add_argument('--is_meta', action='store_true', default=False, help='use normal or meta version')
+    parser.add_argument('--is_vae', action='store_true', default=True, help='ae or vae')
+    parser.add_argument('--is_meta', action='store_true', default=True, help='use normal or meta version')
     parser.add_argument('--use_conv', action='store_true', default=False, help='use fc or conv')
     parser.add_argument('--task_num', type=int, default=4, help='task num, for meta and general both')
     parser.add_argument('--meta_lr', type=float, default=1e-3, help='meta lr or general lr for normal ae/vae')
@@ -179,6 +196,7 @@ if __name__ == '__main__':
     parser.add_argument('--h_dim', type=int, default=2, help='h dim for vae. you should specify net manually for ae')
     parser.add_argument('--train_episode_num', type=int, default=5000)
     parser.add_argument('--test_episode_num', type=int, default=10)
+    parser.add_argument('--epoch', type=int, default=1000, help='total epoch for training.')
     parser.add_argument('--beta', type=float, default=1., help='hyper parameters for vae')
 
     parser.add_argument('--h_range', type=float, default=2.0,

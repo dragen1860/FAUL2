@@ -28,7 +28,7 @@ class AELearner(nn.Module):
         # this dict contains all tensors needed to be optimized
         self.vars = nn.ParameterList()
 
-        for name, param in self.config:
+        for i, (name, param) in enumerate(self.config):
             if name is 'conv2d':
                 # [ch_out, ch_in, kernelsz, kernelsz]
                 w = nn.Parameter(torch.ones(*param[:4]))
@@ -59,6 +59,9 @@ class AELearner(nn.Module):
             elif name is 'hidden':
                 # to separate the variable from encoder.
                 self.hidden_var_idx = len(self.vars)
+                # to separate network config
+                self.hidden_config_idx = i
+                print('hidden_vars:', self.hidden_var_idx, 'hidden_config:', self.hidden_config_idx)
 
             elif name in ['tanh', 'relu', 'hidden', 'upsample', 'avg_pool2d', 'max_pool2d',
                           'flatten', 'reshape', 'leakyrelu', 'sigmoid']:
@@ -67,8 +70,9 @@ class AELearner(nn.Module):
                 raise NotImplementedError
 
         h = self.forward_encoder(torch.Tensor(2, imgc, imgsz, imgsz))
-        out = self.forward(torch.Tensor(2, imgc, imgsz, imgsz))
-        print('Meta','VAE' if is_vae else 'AE')
+        # return with x, loss, likelihood, kld
+        out, _, _, _ = self.forward(torch.Tensor(2, imgc, imgsz, imgsz))
+        print('Meta','VAE' if is_vae else 'AE', end=' ')
         print([2, imgc, imgsz, imgsz], '>:', h.shape, ':<', list(out.shape))
 
 
@@ -153,7 +157,7 @@ class AELearner(nn.Module):
             elif name is 'tanh':
                 x = F.tanh(x)
             elif name is 'sigmoid':
-                x = F.sigmoid(x)
+                x = torch.sigmoid(x)
             elif name is 'hidden':
                 if self.is_vae:
                     # convert from h to q_h
@@ -182,6 +186,7 @@ class AELearner(nn.Module):
 
 
         if self.is_vae:
+            assert not torch.isnan(x).any()
             likelihood = -F.binary_cross_entropy(x, input) / input.size(0)
 
             # see Appendix B from VAE paper:
@@ -197,10 +202,12 @@ class AELearner(nn.Module):
             loss = - elbo
 
             return x, loss, likelihood, kld
+
         else:
 
-            loss = F.mse_loss(x, input)
-            return x, loss, 0, 0
+            loss = F.binary_cross_entropy(x, input)/ input.size(0)
+
+            return x, loss, None, None
 
     def forward_encoder(self, x, vars=None):
         """
@@ -254,7 +261,7 @@ class AELearner(nn.Module):
             elif name is 'tanh':
                 x = F.tanh(x)
             elif name is 'sigmoid':
-                x = F.sigmoid(x)
+                x = torch.sigmoid(x)
             elif name is 'hidden':
 
                 if self.is_vae:
@@ -284,10 +291,10 @@ class AELearner(nn.Module):
 
         return x
 
-    def forward_decoder(self, q_h, vars=None):
+    def forward_decoder(self, h, vars=None):
         """
         forward after hidden layer
-        :param q_h:
+        :param h:
         :param vars:
         :return:
         """
@@ -295,20 +302,11 @@ class AELearner(nn.Module):
             vars = self.vars
 
 
-        hidden_loc = 0
-        for name, param in self.config:
-             if name is not 'hidden':
-                 hidden_loc += 1
-
-        if hidden_loc == len(self.config):
-            raise NotImplementedError
-
         # get decoder network config
-        decoder_config = self.config[hidden_loc+1:]
-
-
+        decoder_config = self.config[self.hidden_config_idx+1:]
         idx = self.hidden_var_idx
-        x = q_h
+
+        x = h
         for name, param in decoder_config:
             if name is 'conv2d':
                 w, b = vars[idx:(idx + 2)]
@@ -334,7 +332,7 @@ class AELearner(nn.Module):
             elif name is 'tanh':
                 x = F.tanh(x)
             elif name is 'sigmoid':
-                x = F.sigmoid(x)
+                x = torch.sigmoid(x)
             elif name is 'relu':
                 x = F.relu(x, inplace=param[0])
             elif name is 'leakyrelu':
@@ -349,6 +347,8 @@ class AELearner(nn.Module):
                 x = F.avg_pool2d(x, param[0], param[1], param[2])
             else:
                 raise NotImplementedError
+
+        # print(self.hidden_var_idx, idx, len(self.vars))
 
         assert  idx == len(self.vars)
         return x
