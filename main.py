@@ -27,7 +27,7 @@ def main(args):
         # optimizer has been embedded in model.
         net = MetaAE(args)
     else:
-        net = AE(args)
+        net = AE(args, use_logits=True)
         optimizer = optim.Adam(net.parameters(), lr=args.meta_lr)
 
     print(net)
@@ -180,7 +180,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--is_vae', action='store_true', default=False, help='ae or vae')
-    parser.add_argument('--is_meta', action='store_true', default=True, help='use normal or meta version')
+    parser.add_argument('--is_meta', action='store_true', default=False, help='use normal or meta version')
     parser.add_argument('--use_conv', action='store_true', default=False, help='use fc or conv')
     parser.add_argument('--task_num', type=int, default=4, help='task num, for meta and general both')
     parser.add_argument('--meta_lr', type=float, default=1e-3, help='meta lr or general lr for normal ae/vae')

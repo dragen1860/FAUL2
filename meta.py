@@ -355,9 +355,9 @@ class MetaAE(nn.Module):
 
             self.meta_optim.zero_grad()
             loss_optim.backward()
-            print('meta update')
-            for p in self.learner.parameters()[:5]:
-                print(torch.norm(p.grad).item())
+            # print('meta update')
+            # for p in self.learner.parameters()[:5]:
+            #     print(torch.norm(p.grad).item())
             self.meta_optim.step()
 
             return loss_optim, losses_q, None, None

@@ -30,10 +30,10 @@ class AE(nn.Module):
     Normal verison (Not meta) ae or vae, support fc and conv
     """
 
-    def __init__(self, args):
+    def __init__(self, args, use_logits):
         """
 
-        :param args: 
+        :param args:
         """
         super(AE, self).__init__()
 
@@ -52,6 +52,10 @@ class AE(nn.Module):
 
         n_hidden = 500
         keep_prob = 1.
+
+        self.use_logits = use_logits
+        if use_logits:
+            print('will use logits on last layer, make sure no implicit sigmoid in network config!')
 
         if self.use_conv:
             raise  NotImplementedError
@@ -99,20 +103,28 @@ class AE(nn.Module):
                 # nn.Dropout(1-keep_prob),
 
                 nn.Linear(n_hidden, img_dim),
-                nn.Sigmoid(),
 
-                Reshape(self.imgc, self.imgsz, self.imgsz)
+                Reshape(self.imgc, self.imgsz, self.imgsz),
+
+                # nn.Sigmoid()
             )
 
 
         # reconstruct loss
-        self.criteon = nn.BCELoss(reduction='sum')
+        if use_logits:
+            self.criteon = nn.BCEWithLogitsLoss(reduction='sum')
+        else:
+            self.criteon = nn.BCELoss(reduction='sum')
+
         # self.optimizer = optim.Adam(list(self.encoder.parameters())+list(self.decoder.parameters()),
         #                             lr=self.lr)
 
         # hidden to n_way, based on h
         self.classifier = nn.Sequential(nn.Linear(self.h_dim, self.n_way))
 
+        self.classify_reset(self.encoder)
+        self.classify_reset(self.decoder)
+        self.classify_reset(self.classifier)
 
         print([2, self.imgc, self.imgsz, self.imgsz], '>:', [2, self.h_dim])
 
@@ -174,7 +186,8 @@ class AE(nn.Module):
 
             loss = self.criteon(x_hat, x) / batchsz
 
-
+        if self.use_logits:
+            pass
 
         return loss, loss, likelihood, kld
 
@@ -207,6 +220,8 @@ class AE(nn.Module):
         """
         x_hat = self.decoder(h)
 
+        if self.use_logits:
+            x_hat = torch.sigmoid(x_hat)
 
         return x_hat
 
@@ -269,7 +284,7 @@ class AE(nn.Module):
         return h_spt0, h_spt1, h_qry0, h_qry1, x_manifold
 
 
-    def classify_reset(self):
+    def classify_reset(self, net):
 
         def weights_init(m):
             if isinstance(m, nn.Linear):
@@ -277,7 +292,7 @@ class AE(nn.Module):
                 torch.nn.init.constant_(m.bias, 0.0)
                 # print('reseted.', m.weight.shape, m.__class__.__name__)
 
-        for m in self.classifier.modules():
+        for m in net.modules():
             m.apply(weights_init)
 
     def classify_train(self, x_train, y_train, x_test, y_test, use_h=True, batchsz=32, train_step=50):
@@ -293,7 +308,7 @@ class AE(nn.Module):
         :return:
         """
         # TODO: init classifier firstly
-        self.classify_reset()
+        self.classify_reset(self.classifier)
 
         criteon = nn.CrossEntropyLoss()
         optimizer = optim.SGD(self.classifier.parameters(), lr=self.classify_lr)
