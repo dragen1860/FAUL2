@@ -228,7 +228,7 @@ class AELearner(nn.Module):
 
         else:
             loss = self.criteon(x, input) / input.size(0)
-            print(loss, input.shape)
+            # print(loss, input.shape)
 
             if self.use_logits:
                 x = torch.sigmoid(x)
