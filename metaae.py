@@ -346,6 +346,89 @@ class MetaLearner(nn.Module):
 
         print(self.learner)
 
+
+
+
+
+    def forward(self, x_spt, y_spt, x_qry, y_qry, training=True):
+        """
+
+        :param x_spt: [task_num, setsz, c_, h, w]
+        :param y_spt: [task_num, setsz]
+        :param x_qry:
+        :param y_qry:
+        :param training:
+        :return:
+        """
+        # batchsz = task_num
+        batchsz, sptsz, c_, h, w = x_spt.size()
+        qrysz = x_qry.size(1)
+
+        losses_q = []  # losses_q[i], i is tasks idx
+
+        # TODO: add multi-threading support
+        # NOTICE: although the GIL limit the multi-threading performance severely, it does make a difference.
+        # When deal with IO operation,
+        # we need to coordinate with outside IO devices. With the assistance of multi-threading, we can issue multi-commands
+        # parallelly and improve the efficency of IO usage.
+        for i in range(batchsz):
+
+            # 1. run the i-th task and compute loss for k=0
+            pred = self.learner(x_spt[i])
+            loss = self.criteon(pred, x_spt[i])
+
+            # 2. grad on theta
+            # clear theta grad info
+            self.learner.zero_grad()
+            grad = torch.autograd.grad(loss, self.learner.parameters())
+
+            # print('k0')
+            # for p in grad[:5]:
+            # 	print(p.norm().item())
+
+            # 3. theta_pi = theta - train_lr * grad
+            fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, self.learner.parameters())))
+
+            # this is the loss and accuracy before first update
+            # [setsz, nway]
+            pred_q = self.learner(x_qry[i], self.learner.parameters())
+
+            # this is the loss and accuracy after the first update
+            # [setsz, nway]
+            pred_q = self.learner(x_qry[i], fast_weights)
+            loss_q = self.criteon(pred_q, x_qry[i])
+
+            for k in range(1, self.update_num):
+                # 1. run the i-th task and compute loss for k=1~K-1
+                pred = self.learner(x_spt[i], fast_weights)
+                loss = self.criteon(pred, x_spt[i])
+                # clear fast_weights grad info
+                self.learner.zero_grad(fast_weights)
+                # 2. compute grad on theta_pi
+                grad = torch.autograd.grad(loss, fast_weights)
+                # 3. theta_pi = theta_pi - train_lr * grad
+                fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, fast_weights)))
+
+                pred_q = self.learner(x_qry[i], fast_weights)
+                loss_q = self.criteon(pred_q, x_qry[i])
+
+            # 4. record last step's loss for task i
+            losses_q.append(loss_q)
+
+        # end of all tasks
+        # sum over all losses across all tasks
+        loss_q = torch.stack(losses_q).sum(0)
+
+        self.meta_optim.zero_grad()
+        loss_q.backward()
+        # print('meta update')
+        # for p in self.learner.parameters()[:5]:
+        # 	print(torch.norm(p).item())
+        self.meta_optim.step()
+
+        return loss_q
+
+
     def classify_reset(self):
         def weights_init(m):
             if isinstance(m, nn.Linear):
@@ -476,84 +559,6 @@ class MetaLearner(nn.Module):
 
 
 
-
-    def forward(self, x_spt, y_spt, x_qry, y_qry, training=True):
-        """
-
-        :param x_spt: [task_num, setsz, c_, h, w]
-        :param y_spt: [task_num, setsz]
-        :param x_qry:
-        :param y_qry:
-        :param training:
-        :return:
-        """
-        # batchsz = task_num
-        batchsz, sptsz, c_, h, w = x_spt.size()
-        qrysz = x_qry.size(1)
-
-        losses_q = []  # losses_q[i], i is tasks idx
-
-        # TODO: add multi-threading support
-        # NOTICE: although the GIL limit the multi-threading performance severely, it does make a difference.
-        # When deal with IO operation,
-        # we need to coordinate with outside IO devices. With the assistance of multi-threading, we can issue multi-commands
-        # parallelly and improve the efficency of IO usage.
-        for i in range(batchsz):
-
-            # 1. run the i-th task and compute loss for k=0
-            pred = self.learner(x_spt[i])
-            loss = self.criteon(pred, x_spt[i])
-
-            # 2. grad on theta
-            # clear theta grad info
-            self.learner.zero_grad()
-            grad = torch.autograd.grad(loss, self.learner.parameters())
-
-            # print('k0')
-            # for p in grad[:5]:
-            # 	print(p.norm().item())
-
-            # 3. theta_pi = theta - train_lr * grad
-            fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, self.learner.parameters())))
-
-            # this is the loss and accuracy before first update
-            # [setsz, nway]
-            pred_q = self.learner(x_qry[i], self.learner.parameters())
-
-            # this is the loss and accuracy after the first update
-            # [setsz, nway]
-            pred_q = self.learner(x_qry[i], fast_weights)
-            loss_q = self.criteon(pred_q, x_qry[i])
-
-            for k in range(1, self.update_num):
-                # 1. run the i-th task and compute loss for k=1~K-1
-                pred = self.learner(x_spt[i], fast_weights)
-                loss = self.criteon(pred, x_spt[i])
-                # clear fast_weights grad info
-                self.learner.zero_grad(fast_weights)
-                # 2. compute grad on theta_pi
-                grad = torch.autograd.grad(loss, fast_weights)
-                # 3. theta_pi = theta_pi - train_lr * grad
-                fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, fast_weights)))
-
-                pred_q = self.learner(x_qry[i], fast_weights)
-                loss_q = self.criteon(pred_q, x_qry[i])
-
-            # 4. record last step's loss for task i
-            losses_q.append(loss_q)
-
-        # end of all tasks
-        # sum over all losses across all tasks
-        loss_q = torch.stack(losses_q).sum(0)
-
-        self.meta_optim.zero_grad()
-        loss_q.backward()
-        # print('meta update')
-        # for p in self.learner.parameters()[:5]:
-        # 	print(torch.norm(p).item())
-        self.meta_optim.step()
-
-        return loss_q
 
 
 

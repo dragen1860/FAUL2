@@ -40,9 +40,9 @@ class MetaAE(nn.Module):
                 config = [
                     ('flatten', []),
                     ('linear', [500, self.img_dim]),
-                    ('leakyrelu', [0.01, True]),
+                    ('leakyrelu', [0.02, True]),
                     ('linear', [500, 500]),
-                    ('leakyrelu', [0.01, True]),
+                    ('leakyrelu', [0.02, True]),
                     ('linear', [2* args.h_dim, 500]),
 
                     ('hidden', []),
@@ -53,16 +53,17 @@ class MetaAE(nn.Module):
                     ('relu', [True]),
                     ('linear', [self.img_dim, 500]),
                     ('reshape', [args.imgc, args.imgsz, args.imgsz]),
-                    ('use_logits',[])
+                    ('sigmoid', []),
+                    # ('use_logits',[]) # sigmoid with logits loss
 
                 ]
             else:
                 config = [
                     ('flatten', []),
                     ('linear', [500, self.img_dim]),
-                    ('leakyrelu', [0.01, True]),
+                    ('leakyrelu', [0.02, True]),
                     ('linear', [500, 500]),
-                    ('leakyrelu', [0.01, True]),
+                    ('leakyrelu', [0.02, True]),
                     ('linear', [args.h_dim, 500]),
 
                     ('hidden', []),
@@ -73,7 +74,8 @@ class MetaAE(nn.Module):
                     ('relu', [True]),
                     ('linear', [self.img_dim, 500]),
                     ('reshape', [args.imgc, args.imgsz, args.imgsz]),
-                    ('use_logits',[]),
+                    ('sigmoid', []),
+                    # ('use_logits',[]), # sigmoid with logits loss
 
                 ]
 
@@ -83,9 +85,154 @@ class MetaAE(nn.Module):
         # hidden to n_way
         self.classifier = nn.Sequential(nn.Linear(args.h_dim, self.n_way))
 
+    def forward_encoder(self, x):
+        """
+
+        :param x:
+        :return:
+        """
+        return self.learner.forward_encoder(x)
+
+    def forward_decoder(self, h):
+        """
+
+        :param h:
+        :return:
+        """
+        return self.learner.forward_decoder(h)
+
+    def forward(self, x_spt, y_spt, x_qry, y_qry):
+        """
+
+        :param x_spt: [task_num, setsz, c_, h, w]
+        :param y_spt: [task_num, setsz]
+        :param x_qry:
+        :param y_qry:
+        :return:
+        """
+        # batchsz = task_num
+        meta_batchsz, sptsz, c_, h, w = x_spt.size()
+        qrysz = x_qry.size(1)
+
+        # statistic data for qry
+        # NOTICE: it's different from [[]]*update_num !!!
+        losses_q, likelihoods_q, klds_q = [[] for _ in range(self.update_num + 1)], \
+                                          [[] for _ in range(self.update_num + 1)], \
+                                          [[] for _ in range(self.update_num + 1)]
+        # statistic data for spt
+        # for spt, it only has update_num items
+        losses_p, likelihoods_p, klds_p = [[] for _ in range(self.update_num + 1)], \
+                                          [[] for _ in range(self.update_num + 1)], \
+                                          [[] for _ in range(self.update_num + 1)]
+
+        def update_statistic(loss, likelihood, kld, loss_q, likelihood_q, kld_q, k):
+            """
+            save all intermediate statistics into list.
+            :param loss:
+            :param likelihood:
+            :param kld:
+            :param loss_q:
+            :param likelihood_q:
+            :param kld_q:
+            :param k: step k-1
+            :return:
+            """
+            losses_p[k].append(loss)
+            likelihoods_p[k].append(likelihood)
+            klds_p[k].append(kld)
+            losses_q[k].append(loss_q)
+            likelihoods_q[k].append(likelihood_q)
+            klds_q[k].append(kld_q)
+
+        # TODO: add multi-threading support
+        # NOTICE: although the GIL limit the multi-threading performance severely, it does make a difference.
+        # When deal with IO operation,
+        # we need to coordinate with outside IO devices. With the assistance of multi-threading, we can issue multi-commands
+        # parallelly and improve the efficency of IO usage.
+        for i in range(meta_batchsz):
+
+            # this is the loss and accuracy before first update
+            with torch.no_grad():
+                pred_q0, loss_q0, likelihood_q0, kld_q0 = self.learner(x_qry[i])
+                update_statistic(None, None, None, loss_q0, likelihood_q0, kld_q0, 0)
+
+            # 1. run the i-th task and compute loss for k=0
+            pred, loss, likelihood, kld = self.learner(x_spt[i])
+
+            # 2. grad on theta
+            # clear theta grad info
+            self.learner.zero_grad()
+            grad = torch.autograd.grad(loss, self.learner.parameters())
+
+            # print('k0')
+            # for p in grad[:5]:
+            # 	print(p.norm().item())
+
+            # 3. theta_pi = theta - train_lr * grad
+            fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, self.learner.parameters())))
 
 
-    def classify_reset(self):
+            # this is the loss and accuracy after the first update
+            pred_q, loss_q, likelihood_q, kld_q = self.learner(x_qry[i], fast_weights)
+            update_statistic(loss, likelihood, kld, loss_q, likelihood_q, kld_q, 1)
+
+            for k in range(1, self.update_num):
+                # 1. run the i-th task and compute loss for k=1~K-1
+                pred, loss, likelihood, kld = self.learner(x_spt[i], fast_weights)
+                # clear fast_weights grad info
+                self.learner.zero_grad(fast_weights)
+                # 2. compute grad on theta_pi
+                grad = torch.autograd.grad(loss, fast_weights)
+                # 3. theta_pi = theta_pi - train_lr * grad
+                fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, fast_weights)))
+
+                pred_q, loss_q, likelihood_q, kld_q = self.learner(x_qry[i], fast_weights)
+                update_statistic(loss, likelihood, kld, loss_q, likelihood_q, kld_q, k + 1)
+
+        if self.is_vae:
+            # get mean loss across tasks on each step, ignore the loss before update on spt.
+            # obj = [[step0_task1, step0_task2,....], [step2,...]]
+            # 0-dim tensor can not be cated, only be stacked!
+            losses_p = [torch.stack(step).mean() for step in losses_p[1:]]
+            likelihoods_p = [torch.stack(step).mean() for step in likelihoods_p[1:]]
+            klds_p = [torch.stack(step).mean() for step in klds_p[1:]]
+            losses_q = [torch.stack(step).mean() for step in losses_q]
+            likelihoods_q = [torch.stack(step).mean() for step in likelihoods_q]
+            klds_q = [torch.stack(step).mean() for step in klds_q]
+
+            # end of all tasks
+            # scalar tensor.
+            loss_optim = losses_q[-1]
+
+            self.meta_optim.zero_grad()
+            loss_optim.backward()
+            # print('meta update')
+            # for p in self.learner.parameters()[:5]:
+            # 	print(torch.norm(p).item())
+            self.meta_optim.step()
+
+            return loss_optim, losses_q, likelihoods_q, klds_q
+
+        else:  # for ae, likelihood and klds= None
+            losses_p = [torch.stack(step).mean() for step in losses_p[1:]]
+            losses_q = [torch.stack(step).mean() for step in losses_q]
+
+            # end of all tasks
+            # scalar tensor.
+            loss_optim = losses_q[-1]
+
+            self.meta_optim.zero_grad()
+            loss_optim.backward()
+            # print('meta update')
+            # for p in self.learner.parameters()[:5]:
+            #     print(torch.norm(p.grad).item())
+            self.meta_optim.step()
+
+            return loss_optim, losses_q, None, None
+
+
+
+    def classify_reset(self, net):
         """
         reset classifier weights before each classification.
         :return:
@@ -96,7 +243,7 @@ class MetaAE(nn.Module):
                 torch.nn.init.constant_(m.bias, 0.0)
                 # print('reseted.', m.weight.shape, m.__class__.__name__)
 
-        for m in self.classifier.modules():
+        for m in net.modules():
             m.apply(weights_init)
 
 
@@ -168,7 +315,7 @@ class MetaAE(nn.Module):
         :return:
         """
         # TODO: init classifier firstly
-        self.classify_reset()
+        self.classify_reset(self.classifier)
 
         criteon = nn.CrossEntropyLoss()
         optimizer = optim.SGD(self.classifier.parameters(), lr=self.classify_lr)
@@ -176,8 +323,8 @@ class MetaAE(nn.Module):
         if not use_h: # given image
             # stop gradient on hidden layer
             # [b, h_c, h_d, h_d]
-            x_train = self.learner.forward_encoder(x_train).detach()
-            x_test = self.learner.forward_encoder(x_test).detach()
+            x_train = self.forward_encoder(x_train).detach()
+            x_test = self.forward_encoder(x_test).detach()
         else:
             x_train, x_test = x_train.detach(), x_test.detach()
         y_train, y_test = y_train.detach(), y_test.detach()
@@ -221,146 +368,7 @@ class MetaAE(nn.Module):
         return accs
 
 
-    def forward_encoder(self, x):
-        """
 
-        :param x:
-        :return:
-        """
-        return self.learner.forward_encoder(x)
-
-    def forward_decoder(self, h):
-        """
-
-        :param h:
-        :return:
-        """
-        return self.learner.forward_decoder(h)
-
-
-    def forward(self, x_spt, y_spt, x_qry, y_qry):
-        """
-
-        :param x_spt: [task_num, setsz, c_, h, w]
-        :param y_spt: [task_num, setsz]
-        :param x_qry:
-        :param y_qry:
-        :param training:
-        :return:
-        """
-        # batchsz = task_num
-        batchsz, sptsz, c_, h, w = x_spt.size()
-        qrysz = x_qry.size(1)
-
-        # statistic data for qry
-        # NOTICE: it's different from [[]]*update_num !!!
-        losses_q, likelihoods_q, klds_q = [[] for _ in range(self.update_num+1)], \
-                                          [[] for _ in range(self.update_num+1)], \
-                                          [[] for _ in range(self.update_num+1)]
-        # statistic data for spt
-        # for spt, it only has update_num items
-        losses_p, likelihoods_p, klds_p = [[] for _ in range(self.update_num+1)], \
-                                          [[] for _ in range(self.update_num+1)],\
-                                          [[] for _ in range(self.update_num+1)]
-
-        def update_statistic(loss, likelihood, kld, loss_q, likelihood_q, kld_q, k):
-            losses_p[k].append(loss)
-            likelihoods_p[k].append(likelihood)
-            klds_p[k].append(kld)
-            losses_q[k].append(loss_q)
-            likelihoods_q[k].append(likelihood_q)
-            klds_q[k].append(kld_q)
-
-
-
-
-        # TODO: add multi-threading support
-        # NOTICE: although the GIL limit the multi-threading performance severely, it does make a difference.
-        # When deal with IO operation,
-        # we need to coordinate with outside IO devices. With the assistance of multi-threading, we can issue multi-commands
-        # parallelly and improve the efficency of IO usage.
-        for i in range(batchsz):
-
-            # this is the loss and accuracy before first update
-            pred_q0, loss_q0, likelihood_q0, kld_q0 = self.learner(x_qry[i])
-            update_statistic(None, None, None, loss_q0, likelihood_q0, kld_q0, 0)
-
-            # 1. run the i-th task and compute loss for k=0
-            pred, loss, likelihood, kld = self.learner(x_spt[i])
-
-
-            # 2. grad on theta
-            # clear theta grad info
-            self.learner.zero_grad()
-            grad = torch.autograd.grad(loss, self.learner.parameters())
-
-            # print('k0')
-            # for p in grad[:5]:
-            # 	print(p.norm().item())
-
-            # 3. theta_pi = theta - train_lr * grad
-            fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, self.learner.parameters())))
-
-
-            # this is the loss and accuracy after the first update
-            pred_q, loss_q, likelihood_q, kld_q = self.learner(x_qry[i], fast_weights)
-            update_statistic(loss, likelihood, kld, loss_q, likelihood_q, kld_q, 1)
-
-            for k in range(1, self.update_num):
-                # 1. run the i-th task and compute loss for k=1~K-1
-                pred, loss, likelihood, kld = self.learner(x_spt[i], fast_weights)
-                # clear fast_weights grad info
-                self.learner.zero_grad(fast_weights)
-                # 2. compute grad on theta_pi
-                grad = torch.autograd.grad(loss, fast_weights)
-                # 3. theta_pi = theta_pi - train_lr * grad
-                fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, fast_weights)))
-
-                pred_q, loss_q, likelihood_q, kld_q = self.learner(x_qry[i], fast_weights)
-
-                update_statistic(loss, likelihood, kld, loss_q, likelihood_q, kld_q, k+1)
-
-
-        if self.is_vae:
-            # get mean loss across tasks on each step, ignore the loss before update on spt.
-            # obj = [[step0_task1, step0_task2,....], [step2,...]]
-            # 0-dim tensor can not be cated, only be stacked!
-            losses_p = [torch.stack(step).mean() for step in losses_p[1:]]
-            likelihoods_p = [torch.stack(step).mean() for step in likelihoods_p[1:]]
-            klds_p = [torch.stack(step).mean() for step in klds_p[1:]]
-            losses_q = [torch.stack(step).mean() for step in losses_q]
-            likelihoods_q = [torch.stack(step).mean() for step in likelihoods_q]
-            klds_q = [torch.stack(step).mean() for step in klds_q]
-
-            # end of all tasks
-            # scalar tensor.
-            loss_optim = losses_q[-1]
-
-            self.meta_optim.zero_grad()
-            loss_optim.backward()
-            # print('meta update')
-            # for p in self.learner.parameters()[:5]:
-            # 	print(torch.norm(p).item())
-            self.meta_optim.step()
-
-            return loss_optim, losses_q, likelihoods_q, klds_q
-
-        else: # for ae, likelihood and klds= None
-            losses_p = [torch.stack(step).mean() for step in losses_p[1:]]
-            losses_q = [torch.stack(step).mean() for step in losses_q]
-
-            # end of all tasks
-            # scalar tensor.
-            loss_optim = losses_q[-1]
-
-            self.meta_optim.zero_grad()
-            loss_optim.backward()
-            # print('meta update')
-            # for p in self.learner.parameters()[:5]:
-            #     print(torch.norm(p.grad).item())
-            self.meta_optim.step()
-
-            return loss_optim, losses_q, None, None
 
 
 

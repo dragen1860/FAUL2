@@ -36,7 +36,7 @@ def main(args):
     task_name = ''.join(['meta' if args.is_meta else 'normal','-',
                         'conv' if args.use_conv else 'fc','-',
                         'vae' if args.is_vae else 'ae'])
-    print('Experiment:', task_name)
+    print('='*10,'Experiment:', task_name, '='*10)
     print(args)
 
     vis = visdom.Visdom(env=task_name)
@@ -92,9 +92,10 @@ def main(args):
 
                     if global_step % 500 == 0:
                         if args.is_vae:
-                            print(global_step, torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
-                            print(torch.stack(likelihoods_q).detach().cpu().numpy().astype(np.float16))
-                            print(torch.stack(klds_q).cpu().detach().numpy().astype(np.float16))
+                            print(global_step)
+                            print('loss_q:', torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
+                            print('lkhd_q:', torch.stack(likelihoods_q).detach().cpu().numpy().astype(np.float16))
+                            print('klds_q:', torch.stack(klds_q).cpu().detach().numpy().astype(np.float16))
                         else:
                             print(global_step, torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
 
@@ -113,6 +114,7 @@ def main(args):
 
                 global_step += 1
                 if global_step % 100 == 0:
+                    print(global_step, loss_optim.item())
                     if likelihood is None:
                         vis.line([[loss_optim.item(), 0, 0]],
                                  [global_step], win='train_loss', update='append')

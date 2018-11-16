@@ -17,6 +17,7 @@ class AELearner(nn.Module):
         :param imgc:
         :param imgsz:
         :param is_vae: auto-encoder or variational ae
+        :param beta: beta for vae.
         """
         super(AELearner, self).__init__()
 
@@ -66,12 +67,23 @@ class AELearner(nn.Module):
 
             elif name is 'use_logits':
                 self.use_logits = True
-                print('will use logits on last layer, make sure no implicit sigmoid in network config!')
-            elif name in ['tanh', 'relu', 'hidden', 'upsample', 'avg_pool2d', 'max_pool2d',
+                print('Use sigmoid with logits, make sure no implicit sigmoid in network config!')
+
+            elif name in ['tanh', 'relu', 'upsample', 'avg_pool2d', 'max_pool2d',
                           'flatten', 'reshape', 'leakyrelu', 'sigmoid']:
                 continue
             else:
                 raise NotImplementedError
+
+
+
+        if self.use_logits:
+            # self.criteon = nn.BCEWithLogitsLoss(reduction='sum')
+            self.criteon = nn.MSELoss(reduction='sum')
+        else:
+            # self.criteon = nn.BCELoss(reduction='sum')
+            self.criteon = nn.MSELoss(reduction='sum')
+
 
         h = self.forward_encoder(torch.Tensor(2, imgc, imgsz, imgsz))
         # return with x, loss, likelihood, kld
@@ -123,7 +135,7 @@ class AELearner(nn.Module):
 
         :param x: [b, 1, 28, 28]
         :param vars:
-        :return:
+        :return: x, loss, likelihood, kld
         """
 
         if vars is None:
@@ -193,10 +205,9 @@ class AELearner(nn.Module):
 
         if self.is_vae:
             assert not torch.isnan(x).any()
-            if self.use_logits:
-                likelihood = -F.binary_cross_entropy_with_logits(x, input, reduction='sum') / input.size(0)
-            else:
-                likelihood = -F.binary_cross_entropy(x, input, reduction='sum') / input.size(0)
+
+            # likelihood is the negative loss.
+            likelihood = -self.criteon(x, input) / input.size(0)
 
             # see Appendix B from VAE paper:
             # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
@@ -216,10 +227,8 @@ class AELearner(nn.Module):
             return x, loss, likelihood, kld
 
         else:
-            if self.use_logits:
-                loss = F.binary_cross_entropy_with_logits(x, input, reduction='sum')/ input.size(0)
-            else:
-                loss = F.binary_cross_entropy(x, input, reduction='sum')/ input.size(0)
+            loss = self.criteon(x, input) / input.size(0)
+            print(loss, input.shape)
 
             if self.use_logits:
                 x = torch.sigmoid(x)
@@ -237,19 +246,6 @@ class AELearner(nn.Module):
             vars = self.vars
 
         idx = 0
-
-        hidden_loc = 0
-        for name, param in self.config:
-            if name is not 'hidden':
-                 hidden_loc += 1
-            else:
-                break
-
-        if hidden_loc == len(self.config):
-            raise NotImplementedError
-
-        # get decoder network config
-        encoder_config = self.config[:hidden_loc]
 
         for name, param in self.config:
             if name is 'conv2d':
@@ -308,9 +304,9 @@ class AELearner(nn.Module):
 
         assert idx == self.hidden_var_idx
 
-
-
         return x
+
+
 
     def forward_decoder(self, h, vars=None):
         """
