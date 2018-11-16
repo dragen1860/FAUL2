@@ -126,6 +126,9 @@ def main(args):
                         vis.images(train_manifold, win='train_manifold', nrow=args.h_nrow,
                                                 opts=dict(title='train_manifold:%d' % epoch))
 
+
+        continue
+
         # clustering, visualization and classification
         db_test = DataLoader(
             MnistNShot('db/mnist', training=False, n_way=args.n_way, k_spt=args.k_spt, k_qry=200,
@@ -176,7 +179,7 @@ def main(args):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--is_vae', action='store_true', default=True, help='ae or vae')
+    parser.add_argument('--is_vae', action='store_true', default=False, help='ae or vae')
     parser.add_argument('--is_meta', action='store_true', default=True, help='use normal or meta version')
     parser.add_argument('--use_conv', action='store_true', default=False, help='use fc or conv')
     parser.add_argument('--task_num', type=int, default=4, help='task num, for meta and general both')

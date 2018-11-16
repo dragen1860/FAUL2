@@ -24,6 +24,7 @@ class AELearner(nn.Module):
         self.config = config
         self.is_vae = is_vae
         self.beta = beta
+        self.use_logits = False
 
         # this dict contains all tensors needed to be optimized
         self.vars = nn.ParameterList()
@@ -63,6 +64,9 @@ class AELearner(nn.Module):
                 self.hidden_config_idx = i
                 print('hidden_vars:', self.hidden_var_idx, 'hidden_config:', self.hidden_config_idx)
 
+            elif name is 'use_logits':
+                self.use_logits = True
+                print('will use logits on last layer, make sure no implicit sigmoid in network config!')
             elif name in ['tanh', 'relu', 'hidden', 'upsample', 'avg_pool2d', 'max_pool2d',
                           'flatten', 'reshape', 'leakyrelu', 'sigmoid']:
                 continue
@@ -104,7 +108,7 @@ class AELearner(nn.Module):
             elif name is 'max_pool2d':
                 tmp = 'max_pool2d:(k:%d, stride:%d, padding:%d)'%(param[0], param[1], param[2])
                 info += tmp + '\n'
-            elif name in ['flatten', 'tanh', 'relu', 'hidden', 'upsample', 'reshape', 'sigmoid']:
+            elif name in ['flatten', 'tanh', 'relu', 'hidden', 'upsample', 'reshape', 'sigmoid', 'use_logits']:
                 tmp = name + ':' + str(tuple(param))
                 info += tmp + '\n'
             else:
@@ -177,6 +181,8 @@ class AELearner(nn.Module):
                 x = F.max_pool2d(x, param[0], param[1], param[2])
             elif name is 'avg_pool2d':
                 x = F.avg_pool2d(x, param[0], param[1], param[2])
+            elif name is 'use_logits':
+                continue
             else:
                 raise NotImplementedError
 
@@ -187,7 +193,10 @@ class AELearner(nn.Module):
 
         if self.is_vae:
             assert not torch.isnan(x).any()
-            likelihood = -F.binary_cross_entropy(x, input) / input.size(0)
+            if self.use_logits:
+                likelihood = -F.binary_cross_entropy_with_logits(x, input, reduction='sum') / input.size(0)
+            else:
+                likelihood = -F.binary_cross_entropy(x, input, reduction='sum') / input.size(0)
 
             # see Appendix B from VAE paper:
             # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
@@ -201,11 +210,19 @@ class AELearner(nn.Module):
             elbo = likelihood - self.beta * kld
             loss = - elbo
 
+            if self.use_logits:
+                x = torch.sigmoid(x)
+
             return x, loss, likelihood, kld
 
         else:
+            if self.use_logits:
+                loss = F.binary_cross_entropy_with_logits(x, input, reduction='sum')/ input.size(0)
+            else:
+                loss = F.binary_cross_entropy(x, input, reduction='sum')/ input.size(0)
 
-            loss = F.binary_cross_entropy(x, input)/ input.size(0)
+            if self.use_logits:
+                x = torch.sigmoid(x)
 
             return x, loss, None, None
 
@@ -284,10 +301,14 @@ class AELearner(nn.Module):
                 x = F.max_pool2d(x, param[0], param[1], param[2])
             elif name is 'avg_pool2d':
                 x = F.avg_pool2d(x, param[0], param[1], param[2])
+            elif name is 'use_logits':
+                raise NotImplementedError
             else:
                 raise NotImplementedError
 
         assert idx == self.hidden_var_idx
+
+
 
         return x
 
@@ -345,12 +366,18 @@ class AELearner(nn.Module):
                 x = F.max_pool2d(x, param[0], param[1], param[2])
             elif name is 'avg_pool2d':
                 x = F.avg_pool2d(x, param[0], param[1], param[2])
+            elif name is 'use_logits':
+                continue
             else:
                 raise NotImplementedError
 
         # print(self.hidden_var_idx, idx, len(self.vars))
 
         assert  idx == len(self.vars)
+
+        if self.use_logits:
+            x = torch.sigmoid(x)
+
         return x
 
     def zero_grad(self, vars=None):

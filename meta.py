@@ -52,8 +52,8 @@ class MetaAE(nn.Module):
                     ('linear', [500, 500]),
                     ('relu', [True]),
                     ('linear', [self.img_dim, 500]),
-                    ('sigmoid',[]),
-                    ('reshape', [args.imgc, args.imgsz, args.imgsz])
+                    ('reshape', [args.imgc, args.imgsz, args.imgsz]),
+                    ('use_logits',[])
 
                 ]
             else:
@@ -72,8 +72,8 @@ class MetaAE(nn.Module):
                     ('linear', [500, 500]),
                     ('relu', [True]),
                     ('linear', [self.img_dim, 500]),
-                    ('sigmoid',[]),
-                    ('reshape', [args.imgc, args.imgsz, args.imgsz])
+                    ('reshape', [args.imgc, args.imgsz, args.imgsz]),
+                    ('use_logits',[]),
 
                 ]
 
@@ -148,7 +148,7 @@ class MetaAE(nn.Module):
             h_qry0 = self.learner.forward_encoder(x_qry)
             h_qry1 = self.learner.forward_encoder(x_qry, fast_weights)
 
-            if h_manifold:
+            if h_manifold is not None:
                 x_manifold = self.learner.forward_decoder(h_manifold, fast_weights)
             else:
                 x_manifold = None
@@ -355,9 +355,9 @@ class MetaAE(nn.Module):
 
             self.meta_optim.zero_grad()
             loss_optim.backward()
-            # print('meta update')
-            # for p in self.learner.parameters()[:5]:
-            # 	print(torch.norm(p).item())
+            print('meta update')
+            for p in self.learner.parameters()[:5]:
+                print(torch.norm(p.grad).item())
             self.meta_optim.step()
 
             return loss_optim, losses_q, None, None
