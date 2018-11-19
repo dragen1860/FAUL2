@@ -55,7 +55,7 @@ class AE(nn.Module):
 
         self.use_logits = use_logits
         if use_logits:
-            print('will use logits on last layer, make sure no implicit sigmoid in network config!')
+            print('Use logits on last layer, make sure no implicit sigmoid in network config!')
 
         if self.use_conv:
             raise  NotImplementedError
@@ -112,9 +112,9 @@ class AE(nn.Module):
 
         # reconstruct loss
         if use_logits:
-            self.criteon = nn.BCEWithLogitsLoss(reduction='sum')
+            self.criteon = nn.BCEWithLogitsLoss(reduction='elementwise_mean')
         else:
-            self.criteon = nn.BCELoss(reduction='sum')
+            self.criteon = nn.BCELoss(reduction='elementwise_mean')
 
         # self.optimizer = optim.Adam(list(self.encoder.parameters())+list(self.decoder.parameters()),
         #                             lr=self.lr)
@@ -126,7 +126,7 @@ class AE(nn.Module):
         self.classify_reset(self.decoder)
         self.classify_reset(self.classifier)
 
-        print([2, self.imgc, self.imgsz, self.imgsz], '>:', [2, self.h_dim])
+        print('x:', [2, self.imgc, self.imgsz, self.imgsz], 'h:', [2, self.h_dim])
 
 
 
@@ -151,7 +151,6 @@ class AE(nn.Module):
             # splitting along dim=1
             q_mu, q_sigma = self.encoder(x).chunk(2, dim=1)
 
-
             # reparametrize trick
             q_h = q_mu + q_sigma * torch.randn_like(q_sigma)
 
@@ -170,9 +169,11 @@ class AE(nn.Module):
             x_hat = self.decoder(q_h)
 
             # reduction=sum loss to img-wise loss
-            likelihood = - self.criteon(x_hat, x) / batchsz
+            likelihood = - self.criteon(x_hat, x) #/ batchsz
+            # notice: this is processed kld
+            kld = self.beta * kld
             # elbo
-            elbo = likelihood - self.beta * kld
+            elbo = likelihood - kld
 
             loss = -elbo
 
@@ -184,9 +185,10 @@ class AE(nn.Module):
 
             likelihood = kld = None
 
-            loss = self.criteon(x_hat, x) / batchsz
+            loss = self.criteon(x_hat, x) #/ batchsz
 
         if self.use_logits:
+            # since here will not return with x_hat
             pass
 
         return loss, loss, likelihood, kld
@@ -266,7 +268,12 @@ class AE(nn.Module):
         # now testing
         h_spt1 = self.forward_encoder(x_spt)
         h_qry1 = self.forward_encoder(x_qry)
-        x_manifold = self.forward_decoder(h_manifold)
+
+        if h_manifold is not None:
+            x_manifold = self.forward_decoder(h_manifold)
+        else:
+            x_manifold = None
+
 
 
         print('FT loss:', np.array(losses).astype(np.float16))

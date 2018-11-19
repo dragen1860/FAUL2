@@ -13,8 +13,13 @@ from    mnistNShot import MnistNShot
 from    visualization import VisualH
 
 
-def update_args(exp, args):
+def update_args(args):
 
+    if args.exp is None:
+        # once exp is not specified, we use default config.
+        return args
+
+    exp = args.exp
 
     if exp == 'meta-conv-ae':
         args.is_vae = False
@@ -58,6 +63,50 @@ def update_args(exp, args):
         args.classify_lr = 0.01
         args.h_dim = 10
 
+    elif exp == 'meta-fc-vae':
+        args.is_vae = True
+        args.is_meta = True
+        args.use_conv = False
+        args.task_num = 4
+        args.meta_lr = 1e-3
+        args.update_num = 5
+        args.update_lr = 0.01
+        args.finetuning_lr = 0.01
+        args.finetuning_steps = 15
+        args.classify_steps = 10
+        args.classify_lr = 0.01
+        args.h_dim = 10
+
+
+    elif exp == 'normal-fc-ae':
+        args.is_vae = False
+        args.is_meta = False
+        args.use_conv = False
+        args.task_num = 4
+        args.meta_lr = 1e-3 # learning rate
+        args.update_num = 5 # no use
+        args.update_lr = 0.01 # no use
+        args.finetuning_lr = 0.01
+        args.finetuning_steps = 15
+        args.classify_steps = 10
+        args.classify_lr = 0.01
+        args.h_dim = 10
+
+    elif exp == 'normal-fc-vae':
+        args.is_vae = True
+        args.beta = 0.0005
+        args.is_meta = False
+        args.use_conv = False
+        args.task_num = 4
+        args.meta_lr = 1e-3 # learning rate
+        args.update_num = 5 # no use
+        args.update_lr = 0.01 # no use
+        args.finetuning_lr = 0.01
+        args.finetuning_steps = 15
+        args.classify_steps = 10
+        args.classify_lr = 0.01
+        args.h_dim = 10
+
     else:
         print('Wrong Exp name:', exp)
         raise NotImplementedError
@@ -67,7 +116,7 @@ def update_args(exp, args):
 
 def main(args):
 
-    args = update_args('meta-fc-ae', args)
+    args = update_args(args)
 
     torch.manual_seed(222)
     torch.cuda.manual_seed_all(222)
@@ -79,7 +128,8 @@ def main(args):
         net = MetaAE(args)
     else:
         net = AE(args, use_logits=True)
-        optimizer = optim.Adam(net.parameters(), lr=args.meta_lr)
+        optimizer = optim.Adam(list(net.encoder.parameters()) + list(net.decoder.parameters()),
+                               lr=args.meta_lr)
 
     print(net)
     net.to(device)
@@ -87,7 +137,7 @@ def main(args):
     task_name = ''.join(['meta' if args.is_meta else 'normal','-',
                         'conv' if args.use_conv else 'fc','-',
                         'vae' if args.is_vae else 'ae'])
-    print('='*10,'Experiment:', task_name, '='*10)
+    print('='*15,'Experiment:', task_name, '='*15)
     print(args)
 
     vis = visdom.Visdom(env=task_name)
@@ -95,7 +145,7 @@ def main(args):
     global_step = 0
     vis.line([[0,0,0]], [0], win='train_loss', opts=dict(
                                                     title='train_loss',
-                                                    legend=['loss', '-likelihood', 'kld'])
+                                                    legend=['loss', '-lklh', 'kld'])
              )
     vis.line([[0,0]], [[0,0]], win='classify_acc', opts=dict(legend=['before', 'after'],
                                                              showlegend=True,
@@ -158,13 +208,15 @@ def main(args):
 
 
             else: # for normal vae/ae
+
                 loss_optim, loss_optim, likelihood, kld = net(spt_x, spt_y, qry_x, qry_y)
                 optimizer.zero_grad()
                 loss_optim.backward()
                 optimizer.step()
 
                 global_step += 1
-                if global_step % 100 == 0:
+                if global_step % 300 == 0:
+
                     print(global_step, loss_optim.item())
                     if likelihood is None:
                         vis.line([[loss_optim.item(), 0, 0]],
@@ -232,6 +284,7 @@ def main(args):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('--exp', default='None', help='meta/normal-fc/conv-ae/vae')
     parser.add_argument('--is_vae', action='store_true', default=False, help='ae or vae')
     parser.add_argument('--is_meta', action='store_true', default=False, help='use normal or meta version')
     parser.add_argument('--use_conv', action='store_true', default=False, help='use fc or conv')
