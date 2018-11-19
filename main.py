@@ -56,7 +56,7 @@ def update_args(exp, args):
         args.finetuning_steps = 15
         args.classify_steps = 10
         args.classify_lr = 0.01
-        args.h_dim = 2
+        args.h_dim = 10
 
     else:
         print('Wrong Exp name:', exp)
