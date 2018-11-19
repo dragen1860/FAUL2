@@ -1,10 +1,12 @@
 import  argparse
+import  os
 import  torch
 from    torch import optim
 from    torch.utils.data import DataLoader
 import  numpy as np
 from    matplotlib import pyplot as plt
 import  visdom
+from    datetime import datetime
 
 from    meta import MetaAE
 from    normal import AE
@@ -86,7 +88,7 @@ def update_args(args):
         args.meta_lr = 1e-3 # learning rate
         args.update_num = 5 # no use
         args.update_lr = 0.01 # no use
-        args.finetuning_lr = 0.01
+        args.finetuning_lr = 0.001
         args.finetuning_steps = 15
         args.classify_steps = 10
         args.classify_lr = 0.01
@@ -94,7 +96,7 @@ def update_args(args):
 
     elif exp == 'normal-fc-vae':
         args.is_vae = True
-        args.beta = 0.5
+        args.beta = 1.0
         args.is_meta = False
         args.use_conv = False
         args.task_num = 4
@@ -162,6 +164,13 @@ def main(args):
         h_manifold = None
 
 
+    # try to resume from ckpt.mdl file
+    if args.resume is not None:
+        net.load_state_dict(torch.load(args.resume))
+        print('Resume from:', args.resume)
+    else:
+        print('Training from scratch...')
+
     for epoch in range(args.epoch):
 
         # 1. train
@@ -179,26 +188,23 @@ def main(args):
                 loss_optim, losses_q, likelihoods_q, klds_q = net(spt_x, spt_y, qry_x, qry_y)
 
                 global_step += 1
-                if global_step % 100 == 0:
+                if global_step % 300 == 0:
 
                     if args.is_vae:
                         # print(losses_q, likelihoods_q, klds_q)
                         vis.line([[losses_q[-1].item(), -likelihoods_q[-1].item(), klds_q[-1].item()]],
                                  [global_step], win='train_loss', update='append')
+
+                        print('loss_q:', torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
+                        print('lkhd_q:', torch.stack(likelihoods_q).detach().cpu().numpy().astype(np.float16))
+                        print('klds_q:', torch.stack(klds_q).cpu().detach().numpy().astype(np.float16))
                     else:
                         # print(losses_q, likelihoods_q, klds_q)
                         vis.line([[losses_q[-1].item(), 0, 0]],
                                  [global_step], win='train_loss', update='append')
+                        print(global_step, torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
 
 
-                    if global_step % 500 == 0:
-                        if args.is_vae:
-                            print(global_step)
-                            print('loss_q:', torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
-                            print('lkhd_q:', torch.stack(likelihoods_q).detach().cpu().numpy().astype(np.float16))
-                            print('klds_q:', torch.stack(klds_q).cpu().detach().numpy().astype(np.float16))
-                        else:
-                            print(global_step, torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
 
                     if args.h_dim == 2:
                         # can not use net.decoder directly!!!
@@ -233,49 +239,53 @@ def main(args):
 
 
 
+        if epoch % 10 == 0:
+            # clustering, visualization and classification
+            db_test = DataLoader(
+                MnistNShot('db/mnist', training=False, n_way=args.n_way, k_spt=args.k_spt, k_qry=200,
+                           imgsz=args.imgsz, episode_num=args.test_episode_num),
+                batch_size=1, shuffle=True)
 
-        # clustering, visualization and classification
-        db_test = DataLoader(
-            MnistNShot('db/mnist', training=False, n_way=args.n_way, k_spt=args.k_spt, k_qry=200,
-                       imgsz=args.imgsz, episode_num=args.test_episode_num),
-            batch_size=1, shuffle=True)
-
-        for batchidx, (spt_x, spt_y, qry_x, qry_y) in enumerate(db_test):
-            spt_x, spt_y, qry_x, qry_y = spt_x.to(device), spt_y.to(device), qry_x.to(device), qry_y.to(device)
-            assert spt_x.size(0) == 1
-            spt_x, spt_y, qry_x, qry_y = spt_x.squeeze(0), spt_y.squeeze(0), qry_x.squeeze(0), qry_y.squeeze(0)
-
-
-            # we can get the representation before first update, after k update
-            # and test the representation on merged(test_spt, test_qry) set
-            h_spt0, h_spt1, h_qry0, h_qry1, test_manifold = net.finetuning(spt_x, spt_y, qry_x, qry_y,
-                                                            args.finetuning_steps, h_manifold)
-
-            visualh.update(h_spt0, h_spt1, h_qry0, h_qry1, spt_y, qry_y, global_step)
+            for batchidx, (spt_x, spt_y, qry_x, qry_y) in enumerate(db_test):
+                spt_x, spt_y, qry_x, qry_y = spt_x.to(device), spt_y.to(device), qry_x.to(device), qry_y.to(device)
+                assert spt_x.size(0) == 1
+                spt_x, spt_y, qry_x, qry_y = spt_x.squeeze(0), spt_y.squeeze(0), qry_x.squeeze(0), qry_y.squeeze(0)
 
 
+                # we can get the representation before first update, after k update
+                # and test the representation on merged(test_spt, test_qry) set
+                h_spt0, h_spt1, h_qry0, h_qry1, test_manifold = net.finetuning(spt_x, spt_y, qry_x, qry_y,
+                                                                args.finetuning_steps, h_manifold)
 
-            acc0 = net.classify_train(h_spt0, spt_y, h_qry0, qry_y, use_h=True, train_step=args.classify_steps)
-            acc1 = net.classify_train(h_spt1, spt_y, h_qry1, qry_y, use_h=True, train_step=args.classify_steps)
-            print(global_step, batchidx, 'classification:\n', acc0, '\n', acc1)
-
-            vis.line([[acc0.max(), acc1.max()]], [global_step], win='classify_acc', update='append')
-
-            if args.h_dim == 2:
-                # can not use net.decoder directly!!!
-                vis.images(test_manifold, win='test_manifold', nrow=args.h_nrow,
-                           opts=dict(title='test_manifold:%d' % epoch))
-
-            break
-
-        # # keep episode_num = batch_size for classification.
-        # db_test = DataLoader(
-        #     MnistNShot('db/mnist', training=False, n_way=5, k_spt=1, k_qry=15, imgsz=32, episode_num=1000),
-        #     batch_size=1000, shuffle=True)
-        # spt_x, spt_y, qry_x, qry_y = iter(db_test).next()
-        # net.classify_train()
+                visualh.update(h_spt0, h_spt1, h_qry0, h_qry1, spt_y, qry_y, global_step)
 
 
+
+                acc0 = net.classify_train(h_spt0, spt_y, h_qry0, qry_y, use_h=True, train_step=args.classify_steps)
+                acc1 = net.classify_train(h_spt1, spt_y, h_qry1, qry_y, use_h=True, train_step=args.classify_steps)
+                print(global_step, batchidx, 'classification:\n', acc0, '\n', acc1)
+
+                vis.line([[acc0.max(), acc1.max()]], [global_step], win='classify_acc', update='append')
+
+                if args.h_dim == 2:
+                    # can not use net.decoder directly!!!
+                    vis.images(test_manifold, win='test_manifold', nrow=args.h_nrow,
+                               opts=dict(title='test_manifold:%d' % epoch))
+
+                break
+
+            # # keep episode_num = batch_size for classification.
+            # db_test = DataLoader(
+            #     MnistNShot('db/mnist', training=False, n_way=5, k_spt=1, k_qry=15, imgsz=32, episode_num=1000),
+            #     batch_size=1000, shuffle=True)
+            # spt_x, spt_y, qry_x, qry_y = iter(db_test).next()
+            # net.classify_train()
+
+
+        if epoch % 20 == 0:
+            mdl_file = os.path.join(args.ckpt_dir, task_name + '_%d'%epoch  + '_' + str(datetime.now()) + '.mdl')
+            torch.save(net.state_dict(), mdl_file)
+            print('Saved into ckpt file:', mdl_file)
 
 
 
@@ -305,6 +315,8 @@ if __name__ == '__main__':
     parser.add_argument('--h_dim', type=int, default=2, help='h dim for vae. you should specify net manually for ae')
     parser.add_argument('--train_episode_num', type=int, default=5000)
     parser.add_argument('--test_episode_num', type=int, default=10)
+    parser.add_argument('--ckpt_dir', type=str, default='ckpt', help='checkpoint save directory')
+    parser.add_argument('--resume', type=str, default=None, help='--resume ckpt.mdl file.')
     parser.add_argument('--epoch', type=int, default=1000, help='total epoch for training.')
     parser.add_argument('--beta', type=float, default=1., help='hyper parameters for vae')
 
