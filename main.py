@@ -194,8 +194,12 @@ def main(args):
 
             spt_x, spt_y, qry_x, qry_y = spt_x.to(device), spt_y.to(device), qry_x.to(device), qry_y.to(device)
 
+            # assert not torch.isnan(spt_x).any()
+            # assert not torch.isnan(qry_x).any()
+
             if args.is_meta: # for meta
                 loss_optim, losses_q, likelihoods_q, klds_q = net(spt_x, spt_y, qry_x, qry_y)
+
 
                 global_step += 1
                 if global_step % 300 == 0:
@@ -234,7 +238,7 @@ def main(args):
                 if global_step % 300 == 0:
 
                     print(global_step, loss_optim.item())
-                    if likelihood is None:
+                    if not args.is_vae:
                         vis.line([[loss_optim.item(), 0, 0]],
                                  [global_step], win='train_loss', update='append')
                     else:
@@ -326,9 +330,9 @@ if __name__ == '__main__':
     parser.add_argument('--imgsz', type=int, default=28)
     parser.add_argument('--h_dim', type=int, default=2, help='h dim for vae. you should specify net manually for ae')
     parser.add_argument('--train_episode_num', type=int, default=5000)
-    parser.add_argument('--test_episode_num', type=int, default=10)
+    parser.add_argument('--test_episode_num', type=int, default=100)
     parser.add_argument('--ckpt_dir', type=str, default='ckpt', help='checkpoint save directory')
-    parser.add_argument('--test_dir', type=str, default='ckpt', help='directory to save test results images and figures')
+    parser.add_argument('--test_dir', type=str, default='results', help='directory to save test results images and figures')
     parser.add_argument('--resume', type=str, default=None, help='--resume ckpt.mdl file.')
     parser.add_argument('--epoch', type=int, default=1000, help='total epoch for training.')
     parser.add_argument('--beta', type=float, default=1., help='hyper parameters for vae')

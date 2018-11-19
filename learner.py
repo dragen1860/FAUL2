@@ -57,6 +57,22 @@ class AELearner(nn.Module):
                 self.vars.append(w)
                 # [ch_out]
                 self.vars.append(nn.Parameter(torch.zeros(param[0])))
+            elif name is 'usigma_layer':
+                assert self.is_vae
+                # w1 + b1 => mean
+                # w2 + b2 => sigma
+                # [ch_out, ch_in]
+                w1 = nn.Parameter(torch.ones(*param))
+                w2 = nn.Parameter(torch.ones(*param))
+                # gain=1 according to cbfin's implementation
+                torch.nn.init.kaiming_normal_(w1)
+                torch.nn.init.kaiming_normal_(w2)
+                self.vars.append(w1)
+                # [ch_out]
+                self.vars.append(nn.Parameter(torch.zeros(param[0])))
+                self.vars.append(w2)
+                # [ch_out]
+                self.vars.append(nn.Parameter(torch.zeros(param[0])))
 
             elif name is 'hidden':
                 # to separate the variable from encoder.
@@ -111,6 +127,9 @@ class AELearner(nn.Module):
 
             elif name is 'linear':
                 tmp = 'linear:(in:%d, out:%d)'%(param[1], param[0])
+                info += tmp + '\n'
+            elif name is 'usigma_layer':
+                tmp = 'usigma_layer:(in:%d, mean:%d, sigma^2:%d)'%(param[1], param[0], param[0])
                 info += tmp + '\n'
             elif name is 'leakyrelu':
                 tmp = 'leakyrelu:(slope:%f)'%(param[0])
@@ -167,6 +186,18 @@ class AELearner(nn.Module):
                 w, b = vars[idx:(idx + 2)]
                 x = F.linear(x, w, b)
                 idx += 2
+                # print('forward:', idx, x.norm().item())
+
+            elif name is 'usigma_layer':
+                w1, b1 = vars[idx:(idx + 2)]
+                w2, b2 = vars[idx+2:(idx + 4)]
+                # [b, h_dim]
+                x1 = F.linear(x, w1, b1)
+                # [b, h_dim]
+                x2 = F.linear(x, w2, b2)
+                # [b, 2*h_dim]
+                x = torch.cat([x1, x2], dim=1)
+                idx += 4
             elif name is 'flatten':
                 x = x.view(x.size(0), -1)
             elif name is 'reshape':
@@ -268,6 +299,16 @@ class AELearner(nn.Module):
                 w, b = vars[idx:(idx + 2)]
                 x = F.linear(x, w, b)
                 idx += 2
+            elif name is 'usigma_layer':
+                w1, b1 = vars[idx:(idx + 2)]
+                w2, b2 = vars[idx + 2:(idx + 4)]
+                # [b, h_dim]
+                x1 = F.linear(x, w1, b1)
+                # [b, h_dim]
+                x2 = F.linear(x, w2, b2)
+                # [b, 2*h_dim]
+                x = torch.cat([x1, x2], dim=1)
+                idx += 4
             elif name is 'flatten':
                 x = x.view(x.size(0), -1)
             elif name is 'reshape':
@@ -345,6 +386,17 @@ class AELearner(nn.Module):
                 w, b = vars[idx:(idx + 2)]
                 x = F.linear(x, w, b)
                 idx += 2
+
+            elif name is 'usigma_layer':
+                w1, b1 = vars[idx:(idx + 2)]
+                w2, b2 = vars[idx+2:(idx + 4)]
+                # [b, h_dim]
+                x1 = F.linear(x, w1, b1)
+                # [b, h_dim]
+                x2 = F.linear(x, w2, b2)
+                # [b, 2*h_dim]
+                x = torch.cat([x1, x2], dim=1)
+                idx += 4
             elif name is 'flatten':
                 x = x.view(x.size(0), -1)
             elif name is 'reshape':

@@ -85,6 +85,7 @@ class MetaAE(nn.Module):
                     ('linear', [500, 500]),
                     ('leakyrelu', [0.02, True]),
                     ('linear', [2* args.h_dim, 500]),
+                    # ('usigma_layer', [args.h_dim, 500]),
 
                     ('hidden', []),
 
@@ -141,6 +142,28 @@ class MetaAE(nn.Module):
         :return:
         """
         return self.learner.forward_decoder(h)
+
+
+    def clip_grad_by_norm_(self, grad, max_norm):
+        """
+        in-place gradient clipping.
+        :param grad: list of gradients
+        :param max_norm: maximum norm allowable
+        :return:
+        """
+
+        total_norm = 0
+        for g in grad:
+            param_norm = g.data.norm(2)
+            total_norm += param_norm.item() ** 2
+        total_norm = total_norm ** (1. / 2)
+
+        clip_coef = max_norm / (total_norm + 1e-6)
+        if clip_coef < 1:
+            for g in grad:
+                g.data.mul_(clip_coef)
+
+        return total_norm
 
     def forward(self, x_spt, y_spt, x_qry, y_qry):
         """
@@ -204,6 +227,13 @@ class MetaAE(nn.Module):
             # clear theta grad info
             self.learner.zero_grad()
             grad = torch.autograd.grad(loss, self.learner.parameters())
+            self.clip_grad_by_norm_(grad, 10)
+            # print('step1')
+            # for g in grad:
+            #     print(g.norm().item(), end=' ')
+            # print('')
+
+
 
             # print('k0')
             # for p in grad[:5]:
@@ -224,6 +254,12 @@ class MetaAE(nn.Module):
                 self.learner.zero_grad(fast_weights)
                 # 2. compute grad on theta_pi
                 grad = torch.autograd.grad(loss, fast_weights)
+                self.clip_grad_by_norm_(grad, 10)
+                # print('step', k+1)
+                # for g in grad:
+                #     print(g.norm().item(), end=' ')
+                # print('')
+
                 # 3. theta_pi = theta_pi - train_lr * grad
                 fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, fast_weights)))
 
