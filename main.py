@@ -147,17 +147,6 @@ def main(args):
     print('='*15,'Experiment:', args.exp, '='*15)
     print(args)
 
-    vis = visdom.Visdom(env=args.exp)
-    visualh = VisualH(vis)
-    global_step = 0
-    vis.line([[0,0,0]], [0], win='train_loss', opts=dict(
-                                                    title='train_loss',
-                                                    legend=['loss', '-lklh', 'kld'])
-             )
-    vis.line([[0,0]], [[0,0]], win='classify_acc', opts=dict(legend=['before', 'after'],
-                                                             showlegend=True,
-                                                             title='class_acc'))
-
     if args.h_dim == 2:
         # borrowed from https://github.com/fastforwardlabs/vae-tf/blob/master/plot.py
         h_range = np.rollaxis(np.mgrid[args.h_range:-args.h_range:args.h_nrow * 1j,
@@ -178,10 +167,19 @@ def main(args):
 
 
     if args.test:
-        test(args, net, device, visualh)
+        test(args, net, device)
         return
 
-
+    vis = visdom.Visdom(env=args.exp)
+    visualh = VisualH(vis)
+    global_step = 0
+    vis.line([[0,0,0]], [0], win='train_loss', opts=dict(
+                                                    title='train_loss',
+                                                    legend=['loss', '-lklh', 'kld'])
+             )
+    vis.line([[0,0]], [[0,0]], win='classify_acc', opts=dict(legend=['before', 'after'],
+                                                             showlegend=True,
+                                                             title='class_acc'))
 
     for epoch in range(args.epoch):
 
@@ -294,8 +292,9 @@ def main(args):
             # net.classify_train()
 
 
-        if epoch % 20 == 0:
-            mdl_file = os.path.join(args.ckpt_dir, args.exp + '_%d'%epoch  + '_' + str(datetime.now()) + '.mdl')
+        if epoch % 10 == 0:
+            date_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+            mdl_file = os.path.join(args.ckpt_dir, args.exp + '_%d'%epoch  + '_' + date_str + '.mdl')
             torch.save(net.state_dict(), mdl_file)
             print('Saved into ckpt file:', mdl_file)
 

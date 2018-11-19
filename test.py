@@ -1,7 +1,5 @@
-import  argparse
 import  os
 import  torch
-from    torch import optim
 from    torch.utils.data import DataLoader
 import  numpy as np
 from    matplotlib import pyplot as plt
@@ -14,12 +12,12 @@ from    mnistNShot import MnistNShot
 
 from    visualization import VisualH
 
-from    sklearn import manifold, datasets, decomposition
+from    sklearn import cluster, metrics
 
 
 
 
-def test(args, net, device, visualh):
+def test(args, net, device):
     """
 
     :param args:
@@ -30,6 +28,9 @@ def test(args, net, device, visualh):
     """
     if args.resume is None:
         raise NotImplementedError
+
+    viz = visdom.Visdom(env='test')
+    visualh = VisualH(viz)
 
     print('Testing now...')
     output_dir = os.path.join(args.test_dir, args.exp)
@@ -56,18 +57,48 @@ def test(args, net, device, visualh):
         h_spt0, h_spt1, h_qry0, h_qry1, _ = net.finetuning(spt_x, spt_y, qry_x, qry_y,
                                                                        args.finetuning_steps, None)
 
-        # we will use the acquired representation to cluster.
 
-        visualh.update(h_spt0, h_spt1, h_qry0, h_qry1, spt_y, qry_y, global_step)
+
+        visualh.update(h_spt0, h_spt1, h_qry0, h_qry1, spt_y, qry_y, batchidx)
+
+
+        # we will use the acquired representation to cluster.
+        # h_spt: [sptsz, h_dim]
+        # h_qry: [qrysz, h_dim]
+        h_qry0_np = h_qry0.detach().cpu().numpy()
+        h_qry1_np = h_qry1.detach().cpu().numpy()
+        qry_y_np = qry_y.detach().cpu().numpy()
+        h_qry0_pred = cluster.KMeans(n_clusters=args.n_way, random_state=0).fit(h_qry0_np).labels_
+        h_qry0_ami = metrics.adjusted_mutual_info_score(qry_y_np, h_qry0_pred)
+        h_qry1_pred = cluster.KMeans(n_clusters=args.n_way, random_state=0).fit(h_qry1_np).labels_
+        h_qry1_ami = metrics.adjusted_mutual_info_score(qry_y_np, h_qry1_pred)
+        print(batchidx, 'ami:', h_qry0_ami, h_qry1_ami)
+
+
+        # compute contigency matrix
+        # viz.heatmap(
+        #     X=np.outer(np.arange(1, 6), np.arange(1, 11)),
+        #     opts=dict(
+        #         columnnames=['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'],
+        #         rownames=['y1', 'y2', 'y3', 'y4', 'y5'],
+        #         colormap='Electric',
+        #         title='heatmap'
+        #     )
+        # )
+        h_qry0_cm = metrics.cluster.contingency_matrix(h_qry0_pred, qry_y)
+        h_qry1_cm = metrics.cluster.contingency_matrix(h_qry0_pred, qry_y)
+        viz.heatmap(X=h_qry0_cm, opts=dict(title=args.exp+' h_qry0_cm:%d'%batchidx, colormap='Electric'))
+        viz.heatmap(X=h_qry1_cm, opts=dict(title=args.exp+' h_qry1_cm:%d'%batchidx, colormap='Electric'))
+
+
 
         acc0 = net.classify_train(h_spt0, spt_y, h_qry0, qry_y, use_h=True, train_step=args.classify_steps)
         acc1 = net.classify_train(h_spt1, spt_y, h_qry1, qry_y, use_h=True, train_step=args.classify_steps)
-        print(global_step, batchidx, 'classification:\n', acc0, '\n', acc1)
-
-        vis.line([[acc0.max(), acc1.max()]], [global_step], win='classify_acc', update='append')
+        print(batchidx, 'acc:\n', acc0, '\n', acc1)
 
 
+        
 
-        break
+
 
 

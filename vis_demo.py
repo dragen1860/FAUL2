@@ -223,6 +223,7 @@ if True:
             columnnames=['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'],
             rownames=['y1', 'y2', 'y3', 'y4', 'y5'],
             colormap='Electric',
+            title='heatmap'
         )
     )
 
