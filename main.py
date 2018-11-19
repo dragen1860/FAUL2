@@ -94,14 +94,14 @@ def update_args(args):
 
     elif exp == 'normal-fc-vae':
         args.is_vae = True
-        args.beta = 0.0005
+        args.beta = 0.5
         args.is_meta = False
         args.use_conv = False
         args.task_num = 4
         args.meta_lr = 1e-3 # learning rate
         args.update_num = 5 # no use
         args.update_lr = 0.01 # no use
-        args.finetuning_lr = 0.01
+        args.finetuning_lr = 0.001
         args.finetuning_steps = 15
         args.classify_steps = 10
         args.classify_lr = 0.01

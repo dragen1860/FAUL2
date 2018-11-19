@@ -112,9 +112,9 @@ class AE(nn.Module):
 
         # reconstruct loss
         if use_logits:
-            self.criteon = nn.BCEWithLogitsLoss(reduction='elementwise_mean')
+            self.criteon = nn.BCEWithLogitsLoss(reduction='sum')
         else:
-            self.criteon = nn.BCELoss(reduction='elementwise_mean')
+            self.criteon = nn.BCELoss(reduction='sum')
 
         # self.optimizer = optim.Adam(list(self.encoder.parameters())+list(self.decoder.parameters()),
         #                             lr=self.lr)
@@ -162,14 +162,14 @@ class AE(nn.Module):
                                         torch.pow(q_mu, 2) +
                                         torch.pow(q_sigma, 2) -
                                         torch.log(1e-8 + torch.pow(q_sigma, 2)) - 1
-                                    ).sum() / batchsz
+                                    ) / batchsz
 
 
             # with/without logits.
             x_hat = self.decoder(q_h)
 
             # reduction=sum loss to img-wise loss
-            likelihood = - self.criteon(x_hat, x) #/ batchsz
+            likelihood = - self.criteon(x_hat, x) / batchsz
             # notice: this is processed kld
             kld = self.beta * kld
             # elbo
@@ -185,7 +185,7 @@ class AE(nn.Module):
 
             likelihood = kld = None
 
-            loss = self.criteon(x_hat, x) #/ batchsz
+            loss = self.criteon(x_hat, x) / batchsz
 
         if self.use_logits:
             # since here will not return with x_hat
