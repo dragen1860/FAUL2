@@ -265,7 +265,7 @@ class AELearner(nn.Module):
             return x, loss, likelihood, kld
 
         else:
-            loss = self.criteon(x, input) #/ input.size(0)
+            loss = self.criteon(x, input) / input.size(0)
             # print(loss, input.shape)
 
             if self.use_logits:
