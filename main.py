@@ -13,12 +13,17 @@ from    normal import AE
 from    mnistNShot import MnistNShot
 
 from    visualization import VisualH
-
+from    test import test
 
 def update_args(args):
 
     if args.exp is None:
-        # once exp is not specified, we use default config.
+        task_name = ''.join(['meta' if args.is_meta else 'normal', '-',
+                             'conv' if args.use_conv else 'fc', '-',
+                             'vae' if args.is_vae else 'ae'])
+        args.exp = task_name
+        print('Not set exp flags, we generate it as:', task_name)
+        # once exp is not specified, we use default individual flags.
         return args
 
     exp = args.exp
@@ -116,6 +121,8 @@ def update_args(args):
     return args
 
 
+
+
 def main(args):
 
     args = update_args(args)
@@ -136,13 +143,11 @@ def main(args):
     print(net)
     net.to(device)
 
-    task_name = ''.join(['meta' if args.is_meta else 'normal','-',
-                        'conv' if args.use_conv else 'fc','-',
-                        'vae' if args.is_vae else 'ae'])
-    print('='*15,'Experiment:', task_name, '='*15)
+
+    print('='*15,'Experiment:', args.exp, '='*15)
     print(args)
 
-    vis = visdom.Visdom(env=task_name)
+    vis = visdom.Visdom(env=args.exp)
     visualh = VisualH(vis)
     global_step = 0
     vis.line([[0,0,0]], [0], win='train_loss', opts=dict(
@@ -169,7 +174,14 @@ def main(args):
         net.load_state_dict(torch.load(args.resume))
         print('Resume from:', args.resume)
     else:
-        print('Training from scratch...')
+        print('Training/test from scratch...')
+
+
+    if args.test:
+        test(args, net, device, visualh)
+        return
+
+
 
     for epoch in range(args.epoch):
 
@@ -283,7 +295,7 @@ def main(args):
 
 
         if epoch % 20 == 0:
-            mdl_file = os.path.join(args.ckpt_dir, task_name + '_%d'%epoch  + '_' + str(datetime.now()) + '.mdl')
+            mdl_file = os.path.join(args.ckpt_dir, args.exp + '_%d'%epoch  + '_' + str(datetime.now()) + '.mdl')
             torch.save(net.state_dict(), mdl_file)
             print('Saved into ckpt file:', mdl_file)
 
@@ -295,6 +307,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--exp', default='None', help='meta/normal-fc/conv-ae/vae')
+    parser.add_argument('--test', action='store_true', help='set to test')
     parser.add_argument('--is_vae', action='store_true', default=False, help='ae or vae')
     parser.add_argument('--is_meta', action='store_true', default=False, help='use normal or meta version')
     parser.add_argument('--use_conv', action='store_true', default=False, help='use fc or conv')
@@ -316,6 +329,7 @@ if __name__ == '__main__':
     parser.add_argument('--train_episode_num', type=int, default=5000)
     parser.add_argument('--test_episode_num', type=int, default=10)
     parser.add_argument('--ckpt_dir', type=str, default='ckpt', help='checkpoint save directory')
+    parser.add_argument('--test_dir', type=str, default='ckpt', help='directory to save test results images and figures')
     parser.add_argument('--resume', type=str, default=None, help='--resume ckpt.mdl file.')
     parser.add_argument('--epoch', type=int, default=1000, help='total epoch for training.')
     parser.add_argument('--beta', type=float, default=1., help='hyper parameters for vae')
