@@ -76,7 +76,7 @@ class MetaAE(nn.Module):
                     ('convt2d', [8, 1, 2, 2, 2, 1]),
                     ('tanh', [])
                 ]
-        else:
+        else: # fully-connected
             if self.is_vae:
                 config = [
                     ('flatten', []),
@@ -94,8 +94,8 @@ class MetaAE(nn.Module):
                     ('relu', [True]),
                     ('linear', [self.img_dim, 500]),
                     ('reshape', [args.imgc, args.imgsz, args.imgsz]),
-                    ('sigmoid', []),
-                    # ('use_logits',[]) # sigmoid with logits loss
+                    # ('sigmoid', []),
+                    ('use_logits',[]) # sigmoid with logits loss
 
                 ]
             else:
@@ -115,8 +115,8 @@ class MetaAE(nn.Module):
                     ('relu', [True]),
                     ('linear', [self.img_dim, 500]),
                     ('reshape', [args.imgc, args.imgsz, args.imgsz]),
-                    ('sigmoid', []),
-                    # ('use_logits',[]), # sigmoid with logits loss
+                    # ('sigmoid', []),
+                    ('use_logits',[]), # sigmoid with logits loss
 
                 ]
 

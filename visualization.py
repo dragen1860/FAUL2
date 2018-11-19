@@ -69,7 +69,7 @@ class VisualH:
 
             self.vis.scatter(X, y, win=title, opts=dict(markersize=4,
                                                         markersymbol='dot',
-                                                        title=title,
+                                                        title=title+':%d'%global_step,
                                                         webgl=True,
                                                         showlegend=True))
 

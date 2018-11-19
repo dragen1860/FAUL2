@@ -78,14 +78,16 @@ class AELearner(nn.Module):
 
 
         if self.use_logits:
-            # self.criteon = nn.BCEWithLogitsLoss(reduction='sum')
-            self.criteon = nn.MSELoss(reduction='sum')
+            # target: [b, 1, 28, 28]
+            self.criteon = nn.BCEWithLogitsLoss(reduction='elementwise_mean')
+            # self.criteon = nn.MSELoss(reduction='sum')
         else:
-            # self.criteon = nn.BCELoss(reduction='sum')
-            self.criteon = nn.MSELoss(reduction='sum')
+            self.criteon = nn.BCELoss(reduction='elementwise_mean')
+            # self.criteon = nn.MSELoss(reduction='elementwise_mean')
 
 
         h = self.forward_encoder(torch.Tensor(2, imgc, imgsz, imgsz))
+        self.h_shape = h.shape[1:] # for printing network structure
         # return with x, loss, likelihood, kld
         out, _, _, _ = self.forward(torch.Tensor(2, imgc, imgsz, imgsz))
         print('Meta','VAE' if is_vae else 'AE', end=' ')
@@ -114,13 +116,17 @@ class AELearner(nn.Module):
                 tmp = 'leakyrelu:(slope:%f)'%(param[0])
                 info += tmp + '\n'
 
+            elif name is 'hidden':
+                tmp = name + ': >>' + str(list(self.h_shape)) + '<<'
+                info += tmp + '\n'
+
             elif name is 'avg_pool2d':
                 tmp = 'avg_pool2d:(k:%d, stride:%d, padding:%d)'%(param[0], param[1], param[2])
                 info += tmp + '\n'
             elif name is 'max_pool2d':
                 tmp = 'max_pool2d:(k:%d, stride:%d, padding:%d)'%(param[0], param[1], param[2])
                 info += tmp + '\n'
-            elif name in ['flatten', 'tanh', 'relu', 'hidden', 'upsample', 'reshape', 'sigmoid', 'use_logits']:
+            elif name in ['flatten', 'tanh', 'relu', 'upsample', 'reshape', 'sigmoid', 'use_logits']:
                 tmp = name + ':' + str(tuple(param))
                 info += tmp + '\n'
             else:
@@ -207,7 +213,7 @@ class AELearner(nn.Module):
             assert not torch.isnan(x).any()
 
             # likelihood is the negative loss.
-            likelihood = -self.criteon(x, input) / input.size(0)
+            likelihood = -self.criteon(x, input) #/ input.size(0)
 
             # see Appendix B from VAE paper:
             # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
@@ -227,7 +233,7 @@ class AELearner(nn.Module):
             return x, loss, likelihood, kld
 
         else:
-            loss = self.criteon(x, input) / input.size(0)
+            loss = self.criteon(x, input) #/ input.size(0)
             # print(loss, input.shape)
 
             if self.use_logits:

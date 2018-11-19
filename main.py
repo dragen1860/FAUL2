@@ -180,7 +180,7 @@ def main(args):
                                                 opts=dict(title='train_manifold:%d' % epoch))
 
 
-        continue
+
 
         # clustering, visualization and classification
         db_test = DataLoader(
