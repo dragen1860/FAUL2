@@ -89,7 +89,7 @@ def test(args, net, device):
         h_qry1_cm = metrics.cluster.contingency_matrix(h_qry0_pred, qry_y)
         viz.heatmap(X=h_qry0_cm, win=args.exp+' h_qry0_cm', opts=dict(title=args.exp+' h_qry0_cm:%d'%batchidx,
                                                                       colormap='Electric'))
-        viz.heatmap(X=h_qry1_cm, win=args.exp+' h_qry0_cm', opts=dict(title=args.exp+' h_qry1_cm:%d'%batchidx,
+        viz.heatmap(X=h_qry1_cm, win=args.exp+' h_qry1_cm', opts=dict(title=args.exp+' h_qry1_cm:%d'%batchidx,
                                                                       colormap='Electric'))
 
 
