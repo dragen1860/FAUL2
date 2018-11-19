@@ -347,6 +347,7 @@ class MetaAE(nn.Module):
         # clear theta grad info
         self.learner.zero_grad()
         grad = torch.autograd.grad(loss, self.learner.parameters())
+        self.clip_grad_by_norm_(grad, 10)
 
         # 3. theta_pi = theta - train_lr * grad
         fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, self.learner.parameters())))
@@ -360,6 +361,7 @@ class MetaAE(nn.Module):
             self.learner.zero_grad(fast_weights)
             # 2. compute grad on theta_pi
             grad = torch.autograd.grad(loss, fast_weights)
+            self.clip_grad_by_norm_(grad, 10)
             # 3. theta_pi = theta_pi - train_lr * grad
             fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, fast_weights)))
 
