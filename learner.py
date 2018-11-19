@@ -95,10 +95,10 @@ class AELearner(nn.Module):
 
         if self.use_logits:
             # target: [b, 1, 28, 28]
-            self.criteon = nn.BCEWithLogitsLoss(reduction='elementwise_mean')
+            self.criteon = nn.BCEWithLogitsLoss(reduction='sum')
             # self.criteon = nn.MSELoss(reduction='sum')
         else:
-            self.criteon = nn.BCELoss(reduction='elementwise_mean')
+            self.criteon = nn.BCELoss(reduction='sum')
             # self.criteon = nn.MSELoss(reduction='elementwise_mean')
 
 
@@ -241,21 +241,22 @@ class AELearner(nn.Module):
 
 
         if self.is_vae:
-            assert not torch.isnan(x).any()
+            # assert not torch.isnan(x).any()
 
             # likelihood is the negative loss.
-            likelihood = -self.criteon(x, input) #/ input.size(0)
+            likelihood = -self.criteon(x, input) / input.size(0)
 
             # see Appendix B from VAE paper:
             # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
             # https://arxiv.org/abs/1312.6114
             # 0.5 * sum(1 + log(sigma^2) - mu^2 - sigma^2)
             kld = 0.5 * torch.sum(
-                torch.pow(q_mu, 2) +
-                torch.pow(q_sigma, 2) -
-                torch.log(1e-8 + torch.pow(q_sigma, 2)) - 1
-            ).sum() / input.size(0)
-            elbo = likelihood - self.beta * kld
+                                torch.pow(q_mu, 2) +
+                                torch.pow(q_sigma, 2) -
+                                torch.log(1e-8 + torch.pow(q_sigma, 2)) - 1
+                            ) / input.size(0)
+            kld = self.beta * kld
+            elbo = likelihood - kld
             loss = - elbo
 
             if self.use_logits:

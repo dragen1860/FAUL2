@@ -208,7 +208,7 @@ def main(args):
                         # print(losses_q, likelihoods_q, klds_q)
                         vis.line([[losses_q[-1].item(), -likelihoods_q[-1].item(), klds_q[-1].item()]],
                                  [global_step], win='train_loss', update='append')
-
+                        print(global_step)
                         print('loss_q:', torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
                         print('lkhd_q:', torch.stack(likelihoods_q).detach().cpu().numpy().astype(np.float16))
                         print('klds_q:', torch.stack(klds_q).cpu().detach().numpy().astype(np.float16))
