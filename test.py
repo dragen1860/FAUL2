@@ -48,7 +48,7 @@ def test(args, net, device, viz=None):
     db_test = DataLoader(
         MnistNShot('db/mnist', training=False, n_way=args.n_way, k_spt=args.k_spt, k_qry=args.k_qry_test,
                    imgsz=args.imgsz, episode_num=args.test_episode_num),
-        batch_size=1, shuffle=True)
+        batch_size=1, shuffle=False)
 
     viz.line([[0, 0]], [0], win=exp+'acc_on_qry01', opts=dict(title='acc_on_qry01',
                                                           legend=['h_qry0', 'h_qry1']))
@@ -57,7 +57,7 @@ def test(args, net, device, viz=None):
     viz.line([[0, 0]], [0], win=exp+'ars_on_qry01', opts=dict(title='ars_on_qry01',
                                                           legend=['h_qry0', 'h_qry1']))
 
-    for ft_step in range(0, 150, 5):
+    for ft_step in range(0, 100, 5):
 
         h_qry0_ami, h_qry0_ars, h_qry1_ami, h_qry1_ars = 0, 0, 0, 0
         acc0, acc1 = [], []
@@ -92,18 +92,6 @@ def test(args, net, device, viz=None):
 
 
 
-
-
-            # compute contigency matrix
-            # viz.heatmap(
-            #     X=np.outer(np.arange(1, 6), np.arange(1, 11)),
-            #     opts=dict(
-            #         columnnames=['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'],
-            #         rownames=['y1', 'y2', 'y3', 'y4', 'y5'],
-            #         colormap='Electric',
-            #         title='heatmap'
-            #     )
-            # )
             h_qry0_cm = metrics.cluster.contingency_matrix(h_qry0_pred, qry_y)
             h_qry1_cm = metrics.cluster.contingency_matrix(h_qry0_pred, qry_y)
             # viz.heatmap(X=h_qry0_cm, win=args.exp+' h_qry0_cm', opts=dict(title=args.exp+' h_qry0_cm:%d'%batchidx,
