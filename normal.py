@@ -5,7 +5,7 @@ from    torch import nn
 from    torch.nn import functional as F
 from    torch import optim
 from    torch.utils.data import TensorDataset, DataLoader
-
+from    copy import deepcopy
 
 
 
@@ -248,8 +248,9 @@ class AE(nn.Module):
 
         # record original representation
         # sampled from Normal distribution internally
-        h_spt0 = self.forward_encoder(x_spt)
-        h_qry0 = self.forward_encoder(x_qry)
+        with torch.no_grad():
+            h_spt0 = self.forward_encoder(x_spt)
+            h_qry0 = self.forward_encoder(x_qry)
 
 
         optimizer = optim.SGD(list(self.encoder.parameters())+list(self.decoder.parameters()),
@@ -266,8 +267,9 @@ class AE(nn.Module):
             losses.append(loss.item())
 
         # now testing
-        h_spt1 = self.forward_encoder(x_spt)
-        h_qry1 = self.forward_encoder(x_qry)
+        with torch.no_grad():
+            h_spt1 = self.forward_encoder(x_spt)
+            h_qry1 = self.forward_encoder(x_qry)
 
         if h_manifold is not None:
             x_manifold = self.forward_decoder(h_manifold)
@@ -277,6 +279,13 @@ class AE(nn.Module):
 
 
         print('FT loss:', np.array(losses).astype(np.float16))
+
+
+
+        # create a new network model
+        new_model = deepcopy(self)
+
+
 
         # restore original state
         # make sure theta is different from updated theta
@@ -288,7 +297,7 @@ class AE(nn.Module):
 
 
 
-        return h_spt0, h_spt1, h_qry0, h_qry1, x_manifold
+        return h_spt0, h_spt1, h_qry0, h_qry1, x_manifold, new_model
 
 
     def classify_reset(self, net):

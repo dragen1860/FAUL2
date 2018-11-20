@@ -7,7 +7,7 @@ from    torch import optim
 import  numpy as np
 
 from    learner import AELearner
-
+from    copy import deepcopy
 
 class MetaAE(nn.Module):
     """
@@ -366,7 +366,12 @@ class MetaAE(nn.Module):
             else:
                 x_manifold = None
 
-        return h_spt0, h_spt1, h_qry0, h_qry1, x_manifold
+            # establish a new learner and copy the weights into it
+            new_learner = deepcopy(self.learner)
+            for p, new_p in zip(new_learner.parameters(), fast_weights):
+                p.copy_(new_p)
+
+        return h_spt0, h_spt1, h_qry0, h_qry1, x_manifold, new_learner
 
     def classify_train(self, x_train, y_train, x_test, y_test, use_h=True, batchsz=32, train_step=50):
         """

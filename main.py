@@ -260,7 +260,7 @@ def main(args):
         if epoch % 10 == 0:
             # clustering, visualization and classification
             db_test = DataLoader(
-                MnistNShot('db/mnist', training=False, n_way=args.n_way, k_spt=args.k_spt, k_qry=200,
+                MnistNShot('db/mnist', training=False, n_way=args.n_way, k_spt=args.k_spt, k_qry=args.k_qry_test,
                            imgsz=args.imgsz, episode_num=args.test_episode_num),
                 batch_size=1, shuffle=True)
 
@@ -272,8 +272,8 @@ def main(args):
 
                 # we can get the representation before first update, after k update
                 # and test the representation on merged(test_spt, test_qry) set
-                h_spt0, h_spt1, h_qry0, h_qry1, test_manifold = net.finetuning(spt_x, spt_y, qry_x, qry_y,
-                                                                args.finetuning_steps, h_manifold)
+                h_spt0, h_spt1, h_qry0, h_qry1, test_manifold, new_net = net.finetuning(spt_x, spt_y, qry_x, qry_y,
+                                                                                args.finetuning_steps, h_manifold)
 
                 visualh.update(h_spt0, h_spt1, h_qry0, h_qry1, spt_y, qry_y, global_step)
 
@@ -338,7 +338,7 @@ if __name__ == '__main__':
     parser.add_argument('--ckpt_dir', type=str, default='ckpt', help='checkpoint save directory')
     parser.add_argument('--test_dir', type=str, default='results', help='directory to save test results images and figures')
     parser.add_argument('--resume', type=str, default=None, help='--resume ckpt.mdl file.')
-    parser.add_argument('--epoch', type=int, default=1000, help='total epoch for training.')
+    parser.add_argument('--epoch', type=int, default=300, help='total epoch for training.')
     parser.add_argument('--beta', type=float, default=1., help='hyper parameters for vae')
 
     parser.add_argument('--h_range', type=float, default=2.0,

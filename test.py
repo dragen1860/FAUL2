@@ -43,7 +43,7 @@ def test(args, net, device):
 
     # clustering, visualization and classification
     db_test = DataLoader(
-        MnistNShot('db/mnist', training=False, n_way=args.n_way, k_spt=args.k_spt, k_qry=200,
+        MnistNShot('db/mnist', training=False, n_way=args.n_way, k_spt=args.k_spt, k_qry=args.k_qry_test,
                    imgsz=args.imgsz, episode_num=args.test_episode_num),
         batch_size=1, shuffle=True)
 
@@ -54,7 +54,7 @@ def test(args, net, device):
 
         # we can get the representation before first update, after k update
         # and test the representation on merged(test_spt, test_qry) set
-        h_spt0, h_spt1, h_qry0, h_qry1, _ = net.finetuning(spt_x, spt_y, qry_x, qry_y,
+        h_spt0, h_spt1, h_qry0, h_qry1, _, new_net = net.finetuning(spt_x, spt_y, qry_x, qry_y,
                                                                        args.finetuning_steps, None)
 
 
