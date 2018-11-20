@@ -192,7 +192,6 @@ def main(args):
 
         # train
         for batchidx, (spt_x, spt_y, qry_x, qry_y) in enumerate(db_train):
-
             spt_x, spt_y, qry_x, qry_y = spt_x.to(device), spt_y.to(device), qry_x.to(device), qry_y.to(device)
 
 
@@ -218,12 +217,6 @@ def main(args):
                         print(epoch, global_step, torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
 
 
-
-                    if args.h_dim == 2:
-                        # can not use net.decoder directly!!!
-                        train_manifold = net.forward_decoder(h_manifold)
-                        vis.images(train_manifold, win='train_manifold', nrow=args.h_nrow,
-                                                    opts=dict(title='train_manifold:%d' % epoch))
 
 
             else: # for normal vae/ae
@@ -254,48 +247,10 @@ def main(args):
 
 
         if epoch % 10 == 0:
-            # clustering, visualization and classification
-            db_test = DataLoader(
-                MnistNShot('db/mnist', training=False, n_way=args.n_way, k_spt=args.k_spt, k_qry=args.k_qry_test,
-                           imgsz=args.imgsz, episode_num=args.test_episode_num),
-                batch_size=1, shuffle=True)
-
-            for batchidx, (spt_x, spt_y, qry_x, qry_y) in enumerate(db_test):
-                spt_x, spt_y, qry_x, qry_y = spt_x.to(device), spt_y.to(device), qry_x.to(device), qry_y.to(device)
-                assert spt_x.size(0) == 1
-                spt_x, spt_y, qry_x, qry_y = spt_x.squeeze(0), spt_y.squeeze(0), qry_x.squeeze(0), qry_y.squeeze(0)
+            test(args, net, device, vis)
 
 
-                # we can get the representation before first update, after k update
-                # and test the representation on merged(test_spt, test_qry) set
-                h_spt0, h_spt1, h_qry0, h_qry1, test_manifold, new_net = net.finetuning(spt_x, spt_y, qry_x, qry_y,
-                                                                                args.finetuning_steps, h_manifold)
-
-                visualh.update(h_spt0, h_spt1, h_qry0, h_qry1, spt_y, qry_y, global_step)
-
-
-
-                acc0 = net.classify_train(h_spt0, spt_y, h_qry0, qry_y, use_h=True, train_step=args.classify_steps)
-                acc1 = net.classify_train(h_spt1, spt_y, h_qry1, qry_y, use_h=True, train_step=args.classify_steps)
-                print(epoch, global_step, batchidx, 'classification:\n', acc0, '\n', acc1)
-
-                vis.line([[acc0.max(), acc1.max()]], [global_step], win='classify_acc', update='append')
-
-                if args.h_dim == 2:
-                    # can not use net.decoder directly!!!
-                    vis.images(test_manifold, win='test_manifold', nrow=args.h_nrow,
-                               opts=dict(title='test_manifold:%d' % epoch))
-
-                break
-
-            # # keep episode_num = batch_size for classification.
-            # db_test = DataLoader(
-            #     MnistNShot('db/mnist', training=False, n_way=5, k_spt=1, k_qry=15, imgsz=32, episode_num=1000),
-            #     batch_size=1000, shuffle=True)
-            # spt_x, spt_y, qry_x, qry_y = iter(db_test).next()
-            # net.classify_train()
-
-
+        # save checkpoint.
         if epoch % 10 == 0:
             date_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
             mdl_file = os.path.join(args.ckpt_dir, args.exp + '_%d'%epoch  + '_' + date_str + '.mdl')

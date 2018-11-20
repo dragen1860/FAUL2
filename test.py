@@ -17,7 +17,7 @@ import  time
 
 
 
-def test(args, net, device):
+def test(args, net, device, viz=None):
     """
 
     :param args:
@@ -27,11 +27,12 @@ def test(args, net, device):
     :return:
     """
     if args.resume is None:
-        raise NotImplementedError
+        print('No ckpt file specified! make sure you are training!')
 
     exp = args.exp + ' '
 
-    viz = visdom.Visdom(env='test')
+    if viz is None:
+        viz = visdom.Visdom(env='test')
     visualh = VisualH(viz)
 
     print('Testing now...')
@@ -55,7 +56,7 @@ def test(args, net, device):
         assert spt_x.size(0) == 1
         spt_x, spt_y, qry_x, qry_y = spt_x.squeeze(0), spt_y.squeeze(0), qry_x.squeeze(0), qry_y.squeeze(0)
 
-        for ft_step in range(0, 200):
+        for ft_step in range(0, 100, 5):
 
             # we can get the representation before first update, after k update
             # and test the representation on merged(test_spt, test_qry) set
@@ -119,6 +120,6 @@ def test(args, net, device):
             viz.images(qry_x_hat1, nrow=8, win=exp+'qry_x_hat1', opts=dict(title=exp+'qry_x_hat1:%d'%ft_step))
 
 
-
+        # only test for one episode.
         break
 
