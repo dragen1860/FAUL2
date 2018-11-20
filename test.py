@@ -50,11 +50,11 @@ def test(args, net, device, viz=None):
                    imgsz=args.imgsz, episode_num=args.test_episode_num),
         batch_size=1, shuffle=True)
 
-    viz.line([[0, 0]], [0], win='acc_on_qry01', opts=dict(title='acc_on_qry01',
+    viz.line([[0, 0]], [0], win=exp+'acc_on_qry01', opts=dict(title='acc_on_qry01',
                                                           legend=['h_qry0', 'h_qry1']))
-    viz.line([[0, 0]], [0], win='ami_on_qry01', opts=dict(title='ami_on_qry01',
+    viz.line([[0, 0]], [0], win=exp+'ami_on_qry01', opts=dict(title='ami_on_qry01',
                                                           legend=['h_qry0', 'h_qry1']))
-    viz.line([[0, 0]], [0], win='ars_on_qry01', opts=dict(title='ars_on_qry01',
+    viz.line([[0, 0]], [0], win=exp+'ars_on_qry01', opts=dict(title='ars_on_qry01',
                                                           legend=['h_qry0', 'h_qry1']))
 
     for ft_step in range(0, 150, 3):
@@ -143,10 +143,10 @@ def test(args, net, device, viz=None):
 
         print(ft_step, 'ami:', h_qry0_ami, h_qry1_ami)
         print(ft_step, 'ars:', h_qry0_ars, h_qry1_ars)
-        viz.line([[h_qry0_ami, h_qry1_ami]], [ft_step], win='ami_on_qry01', update='append')
-        viz.line([[h_qry0_ars, h_qry1_ars]], [ft_step], win='ars_on_qry01', update='append')
+        viz.line([[h_qry0_ami, h_qry1_ami]], [ft_step], win=exp+'ami_on_qry01', update='append')
+        viz.line([[h_qry0_ars, h_qry1_ars]], [ft_step], win=exp+'ars_on_qry01', update='append')
         print(ft_step, 'acc:\n', acc0, '\n', acc1)
-        viz.line([[acc0[-1], acc1[-1]]], [ft_step], win='acc_on_qry01', update='append')
+        viz.line([[acc0[-1], acc1[-1]]], [ft_step], win=exp+'acc_on_qry01', update='append')
 
 
 
