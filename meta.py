@@ -143,6 +143,13 @@ class MetaAE(nn.Module):
         """
         return self.learner.forward_decoder(h)
 
+    def forward_ae(self, x):
+        """
+
+        :param x:
+        :return:
+        """
+        return self.learner.forward_ae(x)
 
     def clip_grad_by_norm_(self, grad, max_norm):
         """
@@ -368,8 +375,10 @@ class MetaAE(nn.Module):
 
             # establish a new learner and copy the weights into it
             new_learner = deepcopy(self.learner)
-            for p, new_p in zip(new_learner.parameters(), fast_weights):
-                p.copy_(new_p)
+            new_learner.vars = nn.ParameterList(map(lambda x:nn.Parameter(x), fast_weights))
+            # for p, new_p in zip(new_learner.parameters(), fast_weights):
+            #     # copy_ need same type, however nn.Parameter vs FloatTensor
+            #     p.data = new_p.data
 
         return h_spt0, h_spt1, h_qry0, h_qry1, x_manifold, new_learner
 

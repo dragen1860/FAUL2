@@ -435,6 +435,21 @@ class AELearner(nn.Module):
 
         return x
 
+
+    def forward_ae(self, x, vars=None):
+        """
+
+        :param x:
+        :param vars:
+        :return:
+        """
+        if vars is None:
+            vars = self.vars
+        h = self.forward_encoder(x, vars)
+        x_hat = self.forward_decoder(h, vars)
+
+        return x_hat
+
     def zero_grad(self, vars=None):
         """
 

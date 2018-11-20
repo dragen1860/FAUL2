@@ -29,6 +29,8 @@ def test(args, net, device):
     if args.resume is None:
         raise NotImplementedError
 
+    exp = args.exp + ' '
+
     viz = visdom.Visdom(env='test')
     visualh = VisualH(viz)
 
@@ -90,10 +92,10 @@ def test(args, net, device):
         # )
         h_qry0_cm = metrics.cluster.contingency_matrix(h_qry0_pred, qry_y)
         h_qry1_cm = metrics.cluster.contingency_matrix(h_qry0_pred, qry_y)
-        viz.heatmap(X=h_qry0_cm, win=args.exp+' h_qry0_cm', opts=dict(title=args.exp+' h_qry0_cm:%d'%batchidx,
-                                                                      colormap='Electric'))
-        viz.heatmap(X=h_qry1_cm, win=args.exp+' h_qry1_cm', opts=dict(title=args.exp+' h_qry1_cm:%d'%batchidx,
-                                                                      colormap='Electric'))
+        # viz.heatmap(X=h_qry0_cm, win=args.exp+' h_qry0_cm', opts=dict(title=args.exp+' h_qry0_cm:%d'%batchidx,
+        #                                                               colormap='Electric'))
+        # viz.heatmap(X=h_qry1_cm, win=args.exp+' h_qry1_cm', opts=dict(title=args.exp+' h_qry1_cm:%d'%batchidx,
+        #                                                               colormap='Electric'))
 
 
 
@@ -103,6 +105,14 @@ def test(args, net, device):
 
 
 
+        spt_x_hat0 = net.forward_ae(spt_x[:64])
+        qry_x_hat0 = net.forward_ae(qry_x[:64])
+        spt_x_hat1 = new_net.forward_ae(spt_x[:64])
+        qry_x_hat1 = new_net.forward_ae(qry_x[:64])
+        viz.images(spt_x_hat0, nrow=8, win=exp+'spt_x_hat0', opts=dict(title=exp+'spt_x_hat0'))
+        viz.images(qry_x_hat0, nrow=8, win=exp+'qry_x_hat0', opts=dict(title=exp+'qry_x_hat0'))
+        viz.images(spt_x_hat1, nrow=8, win=exp+'spt_x_hat1', opts=dict(title=exp+'spt_x_hat1'))
+        viz.images(qry_x_hat1, nrow=8, win=exp+'qry_x_hat1', opts=dict(title=exp+'qry_x_hat1'))
 
 
 

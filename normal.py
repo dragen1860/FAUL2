@@ -227,6 +227,18 @@ class AE(nn.Module):
 
         return x_hat
 
+    def forward_ae(self, x):
+        """
+
+        :param x:
+        :return:
+        """
+        h = self.forward_encoder(x)
+        x_hat = self.forward_decoder(h)
+
+        return x_hat
+
+
     def finetuning(self, x_spt, y_spt, x_qry, y_qry, update_num, h_manifold):
         """
         fine-tuning on spt set and then test on query set.
@@ -262,6 +274,7 @@ class AE(nn.Module):
 
             optimizer.zero_grad()
             loss.backward()
+            nn.utils.clip_grad_norm_(list(self.encoder.parameters())+list(self.decoder.parameters()), 10)
             optimizer.step()
 
             losses.append(loss.item())
