@@ -66,9 +66,9 @@ def update_args(args):
         args.update_lr = 0.1
         args.finetuning_lr = 0.1
         args.finetuning_steps = 15
-        args.classify_steps = 10
+        args.classify_steps = 20
         args.classify_lr = 0.01
-        args.h_dim = 10
+        args.h_dim = 20
 
     elif exp == 'meta-fc-vae':
         args.is_vae = True
@@ -81,9 +81,9 @@ def update_args(args):
         args.update_lr = 0.1
         args.finetuning_lr = 0.1
         args.finetuning_steps = 15
-        args.classify_steps = 10
+        args.classify_steps = 20
         args.classify_lr = 0.01
-        args.h_dim = 10
+        args.h_dim = 20
 
 
     elif exp == 'normal-fc-ae':
@@ -94,9 +94,9 @@ def update_args(args):
         args.meta_lr = 1e-3 # learning rate
         args.finetuning_lr = 0.1
         args.finetuning_steps = 15
-        args.classify_steps = 10
+        args.classify_steps = 20
         args.classify_lr = 0.01
-        args.h_dim = 10
+        args.h_dim = 20
 
     elif exp == 'normal-fc-vae':
         args.is_vae = True
@@ -107,9 +107,9 @@ def update_args(args):
         args.meta_lr = 1e-3 # learning rate
         args.finetuning_lr = 0.1
         args.finetuning_steps = 15
-        args.classify_steps = 10
+        args.classify_steps = 20
         args.classify_lr = 0.01
-        args.h_dim = 10
+        args.h_dim = 20
 
     else:
         print('Wrong Exp name:', exp)

@@ -50,13 +50,19 @@ def test(args, net, device, viz=None):
                    imgsz=args.imgsz, episode_num=args.test_episode_num),
         batch_size=1, shuffle=True)
 
+    viz.line([[0, 0]], [0], win='acc_on_qry01', opts=dict(title='acc_on_qry01',
+                                                          legend=['h_qry0', 'h_qry1']))
+    viz.line([[0, 0]], [0], win='ami_on_qry01', opts=dict(title='ami_on_qry01',
+                                                          legend=['h_qry0', 'h_qry1']))
+    viz.line([[0, 0]], [0], win='ars_on_qry01', opts=dict(title='ars_on_qry01',
+                                                          legend=['h_qry0', 'h_qry1']))
 
     for batchidx, (spt_x, spt_y, qry_x, qry_y) in enumerate(db_test):
         spt_x, spt_y, qry_x, qry_y = spt_x.to(device), spt_y.to(device), qry_x.to(device), qry_y.to(device)
         assert spt_x.size(0) == 1
         spt_x, spt_y, qry_x, qry_y = spt_x.squeeze(0), spt_y.squeeze(0), qry_x.squeeze(0), qry_y.squeeze(0)
 
-        for ft_step in range(0, 100, 5):
+        for ft_step in range(0, 150, 3):
 
             # we can get the representation before first update, after k update
             # and test the representation on merged(test_spt, test_qry) set
@@ -82,6 +88,8 @@ def test(args, net, device, viz=None):
             h_qry1_ars = metrics.adjusted_rand_score(qry_y_np, h_qry1_pred)
             print(batchidx, 'ami:', h_qry0_ami, h_qry1_ami)
             print(batchidx, 'ami:', h_qry0_ars, h_qry1_ars)
+            viz.line([[h_qry0_ami, h_qry1_ami]], [ft_step], win='ami_on_qry01', update='append')
+            viz.line([[h_qry0_ars, h_qry1_ars]], [ft_step], win='ars_on_qry01', update='append')
 
 
             # compute contigency matrix
@@ -106,6 +114,7 @@ def test(args, net, device, viz=None):
             acc0 = net.classify_train(h_spt0, spt_y, h_qry0, qry_y, use_h=True, train_step=args.classify_steps)
             acc1 = net.classify_train(h_spt1, spt_y, h_qry1, qry_y, use_h=True, train_step=args.classify_steps)
             print(batchidx, 'acc:\n', acc0, '\n', acc1)
+            viz.line([[acc0[-1], acc1[-1]]], [ft_step], win='acc_on_qry01', update='append')
 
 
 
