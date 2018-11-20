@@ -159,9 +159,13 @@ def main(args):
 
 
     # try to resume from ckpt.mdl file
+    epoch_start = 0
     if args.resume is not None:
-        net.load_state_dict(torch.load(args.resume))
-        print('Resume from:', args.resume)
+        # ckpt/normal-fc-vae_640_2018-11-20_09:58:58.mdl
+        mdl_file = args.resume
+        epoch_start = int(mdl_file.split('_')[-3])
+        net.load_state_dict(torch.load(mdl_file))
+        print('Resume from:', args.resume, 'epoch:', epoch_start)
     else:
         print('Training/test from scratch...')
 
@@ -181,7 +185,7 @@ def main(args):
                                                              showlegend=True,
                                                              title='class_acc'))
 
-    for epoch in range(args.epoch):
+    for epoch in range(epoch_start, args.epoch):
 
         # 1. train
         db_train = DataLoader(
@@ -208,7 +212,7 @@ def main(args):
                         # print(losses_q, likelihoods_q, klds_q)
                         vis.line([[losses_q[-1].item(), -likelihoods_q[-1].item(), klds_q[-1].item()]],
                                  [global_step], win='train_loss', update='append')
-                        print(global_step)
+                        print(epoch, global_step)
                         print('loss_q:', torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
                         print('lkhd_q:', torch.stack(likelihoods_q).detach().cpu().numpy().astype(np.float16))
                         print('klds_q:', torch.stack(klds_q).cpu().detach().numpy().astype(np.float16))
@@ -216,7 +220,7 @@ def main(args):
                         # print(losses_q, likelihoods_q, klds_q)
                         vis.line([[losses_q[-1].item(), 0, 0]],
                                  [global_step], win='train_loss', update='append')
-                        print(global_step, torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
+                        print(epoch, global_step, torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
 
 
 
@@ -237,7 +241,7 @@ def main(args):
                 global_step += 1
                 if global_step % 300 == 0:
 
-                    print(global_step, loss_optim.item())
+                    print(epoch, global_step, loss_optim.item())
                     if not args.is_vae:
                         vis.line([[loss_optim.item(), 0, 0]],
                                  [global_step], win='train_loss', update='append')
@@ -277,7 +281,7 @@ def main(args):
 
                 acc0 = net.classify_train(h_spt0, spt_y, h_qry0, qry_y, use_h=True, train_step=args.classify_steps)
                 acc1 = net.classify_train(h_spt1, spt_y, h_qry1, qry_y, use_h=True, train_step=args.classify_steps)
-                print(global_step, batchidx, 'classification:\n', acc0, '\n', acc1)
+                print(epoch, global_step, batchidx, 'classification:\n', acc0, '\n', acc1)
 
                 vis.line([[acc0.max(), acc1.max()]], [global_step], win='classify_acc', update='append')
 

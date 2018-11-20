@@ -69,10 +69,13 @@ def test(args, net, device):
         h_qry1_np = h_qry1.detach().cpu().numpy()
         qry_y_np = qry_y.detach().cpu().numpy()
         h_qry0_pred = cluster.KMeans(n_clusters=args.n_way, random_state=0).fit(h_qry0_np).labels_
-        h_qry0_ami = metrics.adjusted_mutual_info_score(qry_y_np, h_qry0_pred)
         h_qry1_pred = cluster.KMeans(n_clusters=args.n_way, random_state=0).fit(h_qry1_np).labels_
+        h_qry0_ami = metrics.adjusted_mutual_info_score(qry_y_np, h_qry0_pred)
+        h_qry0_ars = metrics.adjusted_rand_score(qry_y_np, h_qry0_pred)
         h_qry1_ami = metrics.adjusted_mutual_info_score(qry_y_np, h_qry1_pred)
+        h_qry1_ars = metrics.adjusted_rand_score(qry_y_np, h_qry1_pred)
         print(batchidx, 'ami:', h_qry0_ami, h_qry1_ami)
+        print(batchidx, 'ami:', h_qry0_ars, h_qry1_ars)
 
 
         # compute contigency matrix
