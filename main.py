@@ -137,8 +137,8 @@ def main(args):
         optimizer = optim.Adam(list(net.encoder.parameters()) + list(net.decoder.parameters()),
                                lr=args.meta_lr)
 
-    print(net)
     net.to(device)
+    print(net)
 
 
     print('='*15,'Experiment:', args.exp, '='*15)
@@ -246,12 +246,12 @@ def main(args):
 
 
 
-        if epoch % 10 == 0:
+        if epoch % 20 == 0:
             test(args, net, device, vis)
 
 
         # save checkpoint.
-        if epoch % 10 == 0:
+        if epoch % 20 == 0:
             date_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
             mdl_file = os.path.join(args.ckpt_dir, args.exp + '_%d'%epoch  + '_' + date_str + '.mdl')
             torch.save(net.state_dict(), mdl_file)

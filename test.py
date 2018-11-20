@@ -57,7 +57,7 @@ def test(args, net, device, viz=None):
     viz.line([[0, 0]], [0], win=exp+'ars_on_qry01', opts=dict(title='ars_on_qry01',
                                                           legend=['h_qry0', 'h_qry1']))
 
-    for ft_step in range(0, 150, 3):
+    for ft_step in range(0, 150, 5):
 
         h_qry0_ami, h_qry0_ars, h_qry1_ami, h_qry1_ars = 0, 0, 0, 0
         acc0, acc1 = [], []
@@ -133,7 +133,7 @@ def test(args, net, device, viz=None):
                 viz.images(qry_x_hat1, nrow=8, win=exp+'qry_x_hat1', opts=dict(title=exp+'qry_x_hat1:%d'%ft_step))
 
 
-            if batchidx > 10:
+            if batchidx > 2:
                 break
 
         h_qry0_ami, h_qry0_ars, h_qry1_ami, h_qry1_ars = h_qry0_ami / (batchidx + 1), h_qry0_ars / (batchidx + 1), \
