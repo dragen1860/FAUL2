@@ -60,7 +60,7 @@ def test(args, net, device, viz=None):
     for ft_step in range(0, 150, 3):
 
         h_qry0_ami, h_qry0_ars, h_qry1_ami, h_qry1_ars = 0, 0, 0, 0
-        acc0, acc1 = 0, 0
+        acc0, acc1 = [], []
 
         for batchidx, (spt_x, spt_y, qry_x, qry_y) in enumerate(db_test):
             spt_x, spt_y, qry_x, qry_y = spt_x.to(device), spt_y.to(device), qry_x.to(device), qry_y.to(device)
@@ -113,8 +113,10 @@ def test(args, net, device, viz=None):
 
 
 
-            acc0 += net.classify_train(h_spt0, spt_y, h_qry0, qry_y, use_h=True, train_step=args.classify_steps)
-            acc1 += net.classify_train(h_spt1, spt_y, h_qry1, qry_y, use_h=True, train_step=args.classify_steps)
+
+            # return is a list of [acc_step0, acc_step1 ,...]
+            acc0.append(net.classify_train(h_spt0, spt_y, h_qry0, qry_y, use_h=True, train_step=args.classify_steps))
+            acc1.append(net.classify_train(h_spt1, spt_y, h_qry1, qry_y, use_h=True, train_step=args.classify_steps))
 
 
 
@@ -136,7 +138,8 @@ def test(args, net, device, viz=None):
 
         h_qry0_ami, h_qry0_ars, h_qry1_ami, h_qry1_ars = h_qry0_ami / (batchidx + 1), h_qry0_ars / (batchidx + 1), \
                                                          h_qry1_ami / (batchidx + 1), h_qry1_ars / (batchidx + 1)
-        acc0, acc1 = acc0 / (batchidx + 1), acc1 / (batchidx + 1)
+        # [[epsode1], [episode2],...] = [N, steps] => [steps]
+        acc0, acc1 = np.array(acc0).mean(axis=0), np.array(acc1).mean(axis=0)
 
         print(batchidx, 'ami:', h_qry0_ami, h_qry1_ami)
         print(batchidx, 'ars:', h_qry0_ars, h_qry1_ars)
