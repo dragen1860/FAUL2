@@ -60,11 +60,11 @@ def update_args(args):
         args.is_vae = False
         args.is_meta = True
         args.use_conv = False
-        args.task_num = 4
+        args.task_num = 16
         args.meta_lr = 1e-3
         args.update_num = 5
-        args.update_lr = 0.01
-        args.finetuning_lr = 0.01
+        args.update_lr = 0.1
+        args.finetuning_lr = 0.1
         args.finetuning_steps = 15
         args.classify_steps = 10
         args.classify_lr = 0.01
@@ -72,13 +72,14 @@ def update_args(args):
 
     elif exp == 'meta-fc-vae':
         args.is_vae = True
+        args.beta = 1.0
         args.is_meta = True
         args.use_conv = False
-        args.task_num = 4
+        args.task_num = 16
         args.meta_lr = 1e-3
         args.update_num = 5
-        args.update_lr = 0.01
-        args.finetuning_lr = 0.01
+        args.update_lr = 0.1
+        args.finetuning_lr = 0.1
         args.finetuning_steps = 15
         args.classify_steps = 10
         args.classify_lr = 0.01
@@ -89,11 +90,9 @@ def update_args(args):
         args.is_vae = False
         args.is_meta = False
         args.use_conv = False
-        args.task_num = 4
+        args.task_num = 16
         args.meta_lr = 1e-3 # learning rate
-        args.update_num = 5 # no use
-        args.update_lr = 0.01 # no use
-        args.finetuning_lr = 0.001
+        args.finetuning_lr = 0.1
         args.finetuning_steps = 15
         args.classify_steps = 10
         args.classify_lr = 0.01
@@ -104,11 +103,9 @@ def update_args(args):
         args.beta = 1.0
         args.is_meta = False
         args.use_conv = False
-        args.task_num = 4
+        args.task_num = 16
         args.meta_lr = 1e-3 # learning rate
-        args.update_num = 5 # no use
-        args.update_lr = 0.01 # no use
-        args.finetuning_lr = 0.001
+        args.finetuning_lr = 0.1
         args.finetuning_steps = 15
         args.classify_steps = 10
         args.classify_lr = 0.01
@@ -322,14 +319,14 @@ if __name__ == '__main__':
     parser.add_argument('--task_num', type=int, default=4, help='task num, for meta and general both')
     parser.add_argument('--meta_lr', type=float, default=1e-3, help='meta lr or general lr for normal ae/vae')
     parser.add_argument('--update_num', type=int, default=5, help='update num')
-    parser.add_argument('--update_lr', type=float, default=0.01, help='update lr')
-    parser.add_argument('--finetuning_lr', type=float, default=0.01, help='finetuning lr, similar with update lr')
+    parser.add_argument('--update_lr', type=float, default=0.1, help='update lr')
+    parser.add_argument('--finetuning_lr', type=float, default=0.1, help='finetuning lr, similar with update lr')
     parser.add_argument('--finetuning_steps', type=int, default=15, help='finetuning steps')
     parser.add_argument('--classify_lr', type=float, default=0.01, help='classifier lr')
     parser.add_argument('--classify_steps', type=int, default=10, help='classifier update steps')
     parser.add_argument('--n_way', type=int, default=5)
-    parser.add_argument('--k_spt', type=int, default=15)
-    parser.add_argument('--k_qry', type=int, default=15) # only for train-qry set
+    parser.add_argument('--k_spt', type=int, default=20)
+    parser.add_argument('--k_qry', type=int, default=20) # only for train-qry set
     parser.add_argument('--k_qry_test', type=int, default=200, help='in test phase')
     parser.add_argument('--imgc', type=int, default=1)
     parser.add_argument('--imgsz', type=int, default=28)
