@@ -141,11 +141,11 @@ def test(args, net, device, viz=None):
         # [[epsode1], [episode2],...] = [N, steps] => [steps]
         acc0, acc1 = np.array(acc0).mean(axis=0), np.array(acc1).mean(axis=0)
 
-        print(batchidx, 'ami:', h_qry0_ami, h_qry1_ami)
-        print(batchidx, 'ars:', h_qry0_ars, h_qry1_ars)
+        print(ft_step, 'ami:', h_qry0_ami, h_qry1_ami)
+        print(ft_step, 'ars:', h_qry0_ars, h_qry1_ars)
         viz.line([[h_qry0_ami, h_qry1_ami]], [ft_step], win='ami_on_qry01', update='append')
         viz.line([[h_qry0_ars, h_qry1_ars]], [ft_step], win='ars_on_qry01', update='append')
-        print(batchidx, 'acc:\n', acc0, '\n', acc1)
+        print(ft_step, 'acc:\n', acc0, '\n', acc1)
         viz.line([[acc0[-1], acc1[-1]]], [ft_step], win='acc_on_qry01', update='append')
 
 
