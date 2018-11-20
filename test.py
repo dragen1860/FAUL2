@@ -137,9 +137,9 @@ def test(args, net, device, viz=None):
         h_qry0_ami, h_qry0_ars, h_qry1_ami, h_qry1_ars = h_qry0_ami / (batchidx + 1), h_qry0_ars / (batchidx + 1), \
                                                          h_qry1_ami / (batchidx + 1), h_qry1_ars / (batchidx + 1)
         acc0, acc1 = acc0 / (batchidx + 1), acc1 / (batchidx + 1)
-        
+
         print(batchidx, 'ami:', h_qry0_ami, h_qry1_ami)
-        print(batchidx, 'ami:', h_qry0_ars, h_qry1_ars)
+        print(batchidx, 'ars:', h_qry0_ars, h_qry1_ars)
         viz.line([[h_qry0_ami, h_qry1_ami]], [ft_step], win='ami_on_qry01', update='append')
         viz.line([[h_qry0_ars, h_qry1_ars]], [ft_step], win='ars_on_qry01', update='append')
         print(batchidx, 'acc:\n', acc0, '\n', acc1)
