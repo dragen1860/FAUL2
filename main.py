@@ -195,8 +195,6 @@ def main(args):
 
             spt_x, spt_y, qry_x, qry_y = spt_x.to(device), spt_y.to(device), qry_x.to(device), qry_y.to(device)
 
-            # assert not torch.isnan(spt_x).any()
-            # assert not torch.isnan(qry_x).any()
 
             if args.is_meta: # for meta
                 loss_optim, losses_q, likelihoods_q, klds_q = net(spt_x, spt_y, qry_x, qry_y)

@@ -55,7 +55,7 @@ def test(args, net, device):
         assert spt_x.size(0) == 1
         spt_x, spt_y, qry_x, qry_y = spt_x.squeeze(0), spt_y.squeeze(0), qry_x.squeeze(0), qry_y.squeeze(0)
 
-        for ft_step in range(0, 100):
+        for ft_step in range(0, 200):
 
             # we can get the representation before first update, after k update
             # and test the representation on merged(test_spt, test_qry) set

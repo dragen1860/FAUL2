@@ -7,7 +7,7 @@ import  numpy as np
 from    torchvision import datasets
 
 
-class MnistNShot(Dataset):
+class FashionMnistNShot(Dataset):
     """
     NOTICE: meta-learning is different from general supervised learning, especially the concept of batchsz and setsz.
     batch: contains several sets
@@ -53,10 +53,10 @@ class MnistNShot(Dataset):
                                                  # transforms.Normalize((0.5,), (1.,))
                                                  ])
 
-        db1 = DataLoader(datasets.MNIST(root, train=True, transform=self.transform, download=True),
+        db1 = DataLoader(datasets.FashionMNIST(root, train=True, transform=self.transform, download=True),
                         batch_size=60000, num_workers=1, pin_memory=True)
         data1 = iter(db1).next()
-        db2 = DataLoader(datasets.MNIST(root, train=False, transform=self.transform, download=True),
+        db2 = DataLoader(datasets.FashionMNIST(root, train=False, transform=self.transform, download=True),
                         batch_size=10000, num_workers=1, pin_memory=True)
         data2 = iter(db2).next()
         # torch.Size([60000, 1, 32, 32]) torch.Size([60000])
@@ -148,10 +148,10 @@ class MnistNShot(Dataset):
             qry_y = qry_y[perm]
 
 
-            assert not torch.isnan(spt_x).any()
-            assert not torch.isnan(spt_y).any()
-            assert not torch.isnan(qry_x).any()
-            assert not torch.isnan(qry_y).any()
+            # assert not torch.isnan(spt_x).any()
+            # assert not torch.isnan(spt_y).any()
+            # assert not torch.isnan(qry_x).any()
+            # assert not torch.isnan(qry_y).any()
 
             # spt_x: tensor[sptsz, 1, 32, 32]
             # spt_y: tensor[sptsz]
@@ -184,7 +184,7 @@ if __name__ == '__main__':
     plt.ion()
     vis = visdom.Visdom()
 
-    db = MnistNShot('db/mnist', training=True, n_way=5, k_spt=1, k_qry=15, imgsz=32)
+    db = FashionMnistNShot('db/fashionmnist', training=True, n_way=5, k_spt=1, k_qry=15, imgsz=32)
 
     for i, set_ in enumerate(db):
         # support_x: [k_shot*n_way, 3, 84, 84]
