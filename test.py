@@ -94,15 +94,15 @@ def test(args, net, device, viz=None):
         # h_qry: [qrysz, h_dim]
         h_qry0_np = h_qry0.detach().cpu().numpy()
         h_qry1_np = h_qry1.detach().cpu().numpy()
-        qry_y_np = qry_y.detach().cpu().numpy()
+        y_qry_np = y_qry.detach().cpu().numpy()
         h_qry0_pred = cluster.KMeans(n_clusters=args.n_way, random_state=0).fit(h_qry0_np).labels_
         h_qry1_pred = cluster.KMeans(n_clusters=args.n_way, random_state=0).fit(h_qry1_np).labels_
-        h_qry0_ami = metrics.adjusted_mutual_info_score(qry_y_np, h_qry0_pred)
-        h_qry0_ars = metrics.adjusted_rand_score(qry_y_np, h_qry0_pred)
-        h_qry1_ami = metrics.adjusted_mutual_info_score(qry_y_np, h_qry1_pred)
-        h_qry1_ars = metrics.adjusted_rand_score(qry_y_np, h_qry1_pred)
-        print(batchidx, 'ami:', h_qry0_ami, h_qry1_ami)
-        print(batchidx, 'ami:', h_qry0_ars, h_qry1_ars)
+        h_qry0_ami = metrics.adjusted_mutual_info_score(y_qry_np, h_qry0_pred)
+        h_qry0_ars = metrics.adjusted_rand_score(y_qry_np, h_qry0_pred)
+        h_qry1_ami = metrics.adjusted_mutual_info_score(y_qry_np, h_qry1_pred)
+        h_qry1_ars = metrics.adjusted_rand_score(y_qry_np, h_qry1_pred)
+        print(ft_step, 'ami:', h_qry0_ami, h_qry1_ami)
+        print(ft_step, 'ami:', h_qry0_ars, h_qry1_ars)
         viz.line([[h_qry0_ami, h_qry1_ami]], [ft_step], win='ami_on_qry01', update='append')
         viz.line([[h_qry0_ars, h_qry1_ars]], [ft_step], win='ars_on_qry01', update='append')
 
@@ -117,8 +117,8 @@ def test(args, net, device, viz=None):
         #         title='heatmap'
         #     )
         # )
-        # h_qry0_cm = metrics.cluster.contingency_matrix(h_qry0_pred, qry_y)
-        # h_qry1_cm = metrics.cluster.contingency_matrix(h_qry0_pred, qry_y)
+        # h_qry0_cm = metrics.cluster.contingency_matrix(h_qry0_pred, y_qry_np)
+        # h_qry1_cm = metrics.cluster.contingency_matrix(h_qry0_pred, y_qry_np)
         # viz.heatmap(X=h_qry0_cm, win=args.exp+' h_qry0_cm', opts=dict(title=args.exp+' h_qry0_cm:%d'%batchidx,
         #                                                               colormap='Electric'))
         # viz.heatmap(X=h_qry1_cm, win=args.exp+' h_qry1_cm', opts=dict(title=args.exp+' h_qry1_cm:%d'%batchidx,
@@ -126,23 +126,27 @@ def test(args, net, device, viz=None):
 
 
 
-        acc0 = net.classify_train(h_spt0, spt_y, h_qry0, qry_y, use_h=True, train_step=args.classify_steps)
-        acc1 = net.classify_train(h_spt1, spt_y, h_qry1, qry_y, use_h=True, train_step=args.classify_steps)
-        print(batchidx, 'acc:\n', acc0, '\n', acc1)
+        acc0 = net.classify_train(h_spt0, y_spt, h_qry0, y_qry, use_h=True, train_step=args.classify_steps)
+        acc1 = net.classify_train(h_spt1, y_spt, h_qry1, y_qry, use_h=True, train_step=args.classify_steps)
+        print(ft_step, 'acc:\n', acc0, '\n', acc1)
         viz.line([[acc0[-1], acc1[-1]]], [ft_step], win='acc_on_qry01', update='append')
 
 
 
-        spt_x_hat0 = net.forward_ae(spt_x[:64])
-        qry_x_hat0 = net.forward_ae(qry_x[:64])
-        spt_x_hat1 = new_net.forward_ae(spt_x[:64])
-        qry_x_hat1 = new_net.forward_ae(qry_x[:64])
-        viz.images(qry_x[:64], nrow=8, win=exp+'qry_x', opts=dict(title=exp+'qry_x:%d'%ft_step))
-        # viz.images(spt_x_hat0, nrow=8, win=exp+'spt_x_hat0', opts=dict(title=exp+'spt_x_hat0'))
-        viz.images(qry_x_hat0, nrow=8, win=exp+'qry_x_hat0', opts=dict(title=exp+'qry_x_hat0:%d'%ft_step))
-        # viz.images(spt_x_hat1, nrow=8, win=exp+'spt_x_hat1', opts=dict(title=exp+'spt_x_hat1'))
-        viz.images(qry_x_hat1, nrow=8, win=exp+'qry_x_hat1', opts=dict(title=exp+'qry_x_hat1:%d'%ft_step))
 
+        for batchidx, (spt_x, spt_y, qry_x, qry_y) in enumerate(db_test):
+            spt_x, spt_y, qry_x, qry_y = spt_x.to(device), spt_y.to(device), qry_x.to(device), qry_y.to(device)
+            assert spt_x.size(0) == 1
+            spt_x, spt_y, qry_x, qry_y = spt_x.squeeze(0), spt_y.squeeze(0), qry_x.squeeze(0), qry_y.squeeze(0)
 
-        # only test for one episode.
-        break
+            spt_x_hat0 = net.forward_ae(spt_x[:64])
+            qry_x_hat0 = net.forward_ae(qry_x[:64])
+            spt_x_hat1 = new_net.forward_ae(spt_x[:64])
+            qry_x_hat1 = new_net.forward_ae(qry_x[:64])
+            viz.images(qry_x[:64], nrow=8, win=exp+'qry_x', opts=dict(title=exp+'qry_x:%d'%ft_step))
+            # viz.images(spt_x_hat0, nrow=8, win=exp+'spt_x_hat0', opts=dict(title=exp+'spt_x_hat0'))
+            viz.images(qry_x_hat0, nrow=8, win=exp+'qry_x_hat0', opts=dict(title=exp+'qry_x_hat0:%d'%ft_step))
+            # viz.images(spt_x_hat1, nrow=8, win=exp+'spt_x_hat1', opts=dict(title=exp+'spt_x_hat1'))
+            viz.images(qry_x_hat1, nrow=8, win=exp+'qry_x_hat1', opts=dict(title=exp+'qry_x_hat1:%d'%ft_step))
+
+            break
