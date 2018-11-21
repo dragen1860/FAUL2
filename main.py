@@ -65,7 +65,7 @@ def update_args(args):
         args.update_num = 5
         args.update_lr = 0.1
         args.finetuning_lr = 0.1
-        args.finetuning_steps = 35
+        args.finetuning_steps = 55
         args.classify_steps = 20
         args.classify_lr = 0.01
         args.h_dim = 20
@@ -80,7 +80,7 @@ def update_args(args):
         args.update_num = 5
         args.update_lr = 0.1
         args.finetuning_lr = 0.1
-        args.finetuning_steps = 35
+        args.finetuning_steps = 55
         args.classify_steps = 20
         args.classify_lr = 0.01
         args.h_dim = 20
@@ -93,7 +93,7 @@ def update_args(args):
         args.task_num = 16
         args.meta_lr = 1e-3 # learning rate
         args.finetuning_lr = 0.001 # distinct from meta, this should be smaller
-        args.finetuning_steps = 35
+        args.finetuning_steps = 55
         args.classify_steps = 20
         args.classify_lr = 0.01
         args.h_dim = 20
@@ -106,7 +106,7 @@ def update_args(args):
         args.task_num = 16
         args.meta_lr = 1e-3 # learning rate
         args.finetuning_lr = 0.001 # distinct from meta, this should be smaller
-        args.finetuning_steps = 35
+        args.finetuning_steps = 55
         args.classify_steps = 20
         args.classify_lr = 0.01
         args.h_dim = 20
