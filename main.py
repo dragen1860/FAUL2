@@ -60,16 +60,16 @@ def update_args(args):
         args.is_vae = False
         args.is_meta = True
         args.use_conv = False
-        args.finetuning_lr = 0.1
-        args.finetuning_steps = 15
+        # args.finetuning_lr = 0.1
+        # args.finetuning_steps = 15
 
 
     elif exp == 'meta-fc-vae':
         args.is_vae = True
         args.is_meta = True
         args.use_conv = False
-        args.finetuning_lr = 0.1
-        args.finetuning_steps = 15
+        # args.finetuning_lr = 0.1
+        # args.finetuning_steps = 15
 
 
 
@@ -77,8 +77,8 @@ def update_args(args):
         args.is_vae = False
         args.is_meta = False
         args.use_conv = False
-        args.finetuning_lr = 0.1 # distinct from meta, this should be smaller
-        args.finetuning_steps = 15
+        # args.finetuning_lr = 0.1 # distinct from meta, this should be smaller
+        # args.finetuning_steps = 15
 
 
     elif exp == 'normal-fc-vae':
@@ -86,8 +86,8 @@ def update_args(args):
         args.beta = 1.0
         args.is_meta = False
         args.use_conv = False
-        args.finetuning_lr = 0.1 # distinct from meta, this should be smaller
-        args.finetuning_steps = 15
+        # args.finetuning_lr = 0.1 # distinct from meta, this should be smaller
+        # args.finetuning_steps = 15
 
 
     else:

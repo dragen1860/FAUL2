@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="543242f9-cc37-46fd-b752-21cae4eb5c80" name="Default Changelist" comment="" />
+    <list default="true" id="543242f9-cc37-46fd-b752-21cae4eb5c80" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+    </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -77,11 +79,11 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="640">
-              <caret line="285" column="63" lean-forward="true" selection-start-line="285" selection-start-column="63" selection-end-line="285" selection-end-column="63" />
+            <state relative-caret-position="247">
+              <caret line="61" column="29" lean-forward="true" selection-start-line="61" selection-start-column="29" selection-end-line="61" selection-end-column="29" />
               <folding>
                 <element signature="e#0#16#0" expanded="true" />
-                <marker date="1542804276991" expanded="true" signature="2561:2564" ph="..." />
+                <marker date="1542804629173" expanded="true" signature="2577:2580" ph="..." />
               </folding>
             </state>
           </provider>
@@ -827,11 +829,11 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="640">
-          <caret line="285" column="63" lean-forward="true" selection-start-line="285" selection-start-column="63" selection-end-line="285" selection-end-column="63" />
+        <state relative-caret-position="247">
+          <caret line="61" column="29" lean-forward="true" selection-start-line="61" selection-start-column="29" selection-end-line="61" selection-end-column="29" />
           <folding>
             <element signature="e#0#16#0" expanded="true" />
-            <marker date="1542804276991" expanded="true" signature="2561:2564" ph="..." />
+            <marker date="1542804629173" expanded="true" signature="2577:2580" ph="..." />
           </folding>
         </state>
       </provider>
