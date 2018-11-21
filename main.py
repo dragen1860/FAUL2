@@ -248,7 +248,7 @@ def main(args):
 
             else: # for normal vae/ae
 
-                loss_optim, loss_optim, likelihood, kld = net(spt_x, spt_y, qry_x, qry_y)
+                loss_optim, _, likelihood, kld = net(spt_x, spt_y, qry_x, qry_y)
                 optimizer.zero_grad()
                 loss_optim.backward()
                 torch.nn.utils.clip_grad_norm_(list(net.encoder.parameters())+list(net.decoder.parameters()), 10)
