@@ -153,7 +153,7 @@ def test_progress(args, net, device, viz=None, global_step=0):
     if args.resume is None:
         print('No ckpt file specified! make sure you are training!')
 
-    exp = args.exp + ' '
+    exp = args.exp
 
     if viz is None:
         viz = visdom.Visdom(env='test')
