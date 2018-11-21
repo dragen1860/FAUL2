@@ -249,7 +249,7 @@ def main(args):
                         vis.images(train_manifold, win='train_manifold', nrow=args.h_nrow,
                                                 opts=dict(title='train_manifold:%d' % epoch))
 
-        if epoch % 5 == 0:
+        if epoch % 2 == 0:
             test.test_progress(args, net, device, vis, global_step)
 
 
@@ -280,10 +280,10 @@ if __name__ == '__main__':
     parser.add_argument('--task_num', type=int, default=4, help='task num, for meta and general both')
     parser.add_argument('--meta_lr', type=float, default=1e-3, help='meta lr or general lr for normal ae/vae')
     parser.add_argument('--update_num', type=int, default=5, help='update num')
-    parser.add_argument('--update_lr', type=float, default=0.5, help='update lr')
-    parser.add_argument('--finetuning_lr', type=float, default=0.5, help='finetuning lr, similar with update lr')
-    parser.add_argument('--finetuning_steps', type=int, default=15, help='finetuning steps')
-    parser.add_argument('--classify_lr', type=float, default=0.01, help='classifier lr')
+    parser.add_argument('--update_lr', type=float, default=0.2, help='update lr')
+    parser.add_argument('--finetuning_lr', type=float, default=0.2, help='finetuning lr, similar with update lr')
+    parser.add_argument('--finetuning_steps', type=int, default=5, help='finetuning steps')
+    parser.add_argument('--classify_lr', type=float, default=0.05, help='classifier lr')
     parser.add_argument('--classify_steps', type=int, default=50, help='classifier update steps')
     parser.add_argument('--n_way', type=int, default=5)
     parser.add_argument('--k_spt', type=int, default=1)
@@ -291,7 +291,7 @@ if __name__ == '__main__':
     parser.add_argument('--k_qry_test', type=int, default=200, help='in test phase')
     parser.add_argument('--imgc', type=int, default=1)
     parser.add_argument('--imgsz', type=int, default=28)
-    parser.add_argument('--h_dim', type=int, default=2, help='h dim for vae. you should specify net manually for ae')
+    parser.add_argument('--h_dim', type=int, default=20, help='h dim for vae. you should specify net manually for ae')
     parser.add_argument('--train_episode_num', type=int, default=5000)
     parser.add_argument('--test_episode_num', type=int, default=100)
     parser.add_argument('--ckpt_dir', type=str, default='ckpt', help='checkpoint save directory')
