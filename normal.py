@@ -64,45 +64,45 @@ class AE(nn.Module):
                 # [b, imgc*imgsz*imgsz] => [b, q_h_d*2]
                 self.encoder = nn.Sequential(
                     Flatten(),
-                    nn.Linear(img_dim, n_hidden//2),
+                    nn.Linear(img_dim, n_hidden),
                     nn.LeakyReLU(),
                     # nn.Dropout(1-keep_prob),
 
-                    nn.Linear(n_hidden//2, n_hidden//4),
-                    nn.LeakyReLU(),
+                    # nn.Linear(n_hidden//2, n_hidden//4),
+                    # nn.LeakyReLU(),
                     # nn.Dropout(1-keep_prob),
 
-                    nn.Linear(n_hidden//4, self.h_dim*2)
+                    nn.Linear(n_hidden, self.h_dim*2)
 
                 )
             else:
                 # [b, imgc*imgsz*imgsz] => [b, q_h_d*2]
                 self.encoder = nn.Sequential(
                     Flatten(),
-                    nn.Linear(img_dim, n_hidden//2),
+                    nn.Linear(img_dim, n_hidden),
                     nn.LeakyReLU(),
                     # nn.Dropout(1-keep_prob),
 
-                    nn.Linear(n_hidden//2, n_hidden//4),
-                    nn.LeakyReLU(),
+                    # nn.Linear(n_hidden//2, n_hidden//4),
+                    # nn.LeakyReLU(),
                     # nn.Dropout(1-keep_prob),
 
-                    nn.Linear(n_hidden//4, self.h_dim)
+                    nn.Linear(n_hidden, self.h_dim)
 
                 )
 
 
             # [b, q_h_d, 1, 1] => [b, imgc, imgsz, imgsz]
             self.decoder = nn.Sequential(
-                nn.Linear(self.h_dim, n_hidden//4),
+                nn.Linear(self.h_dim, n_hidden),
                 nn.ReLU(),
                 # nn.Dropout(1-keep_prob),
 
-                nn.Linear(n_hidden//4, n_hidden//2),
-                nn.ReLU(),
+                # nn.Linear(n_hidden//4, n_hidden//2),
+                # nn.ReLU(),
                 # nn.Dropout(1-keep_prob),
 
-                nn.Linear(n_hidden//2, img_dim),
+                nn.Linear(n_hidden, img_dim),
 
                 Reshape(self.imgc, self.imgsz, self.imgsz),
 

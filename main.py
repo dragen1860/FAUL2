@@ -273,7 +273,7 @@ def main(args):
 
 
 
-        if epoch % 10 == 0:
+        if epoch % 5 == 0:
             test.test_progress(args, net, device, vis, global_step)
 
 
@@ -325,7 +325,7 @@ if __name__ == '__main__':
     parser.add_argument('--beta', type=float, default=1., help='hyper parameters for vae')
 
 
-    parser.add_argument('--fc_hidden', type=int, default=64, help='784=>fc_hidden=>')
+    parser.add_argument('--fc_hidden', type=int, default=128, help='784=>fc_hidden=>')
     parser.add_argument('--conv_ch', type=int, default=16, help='conv channels units')
 
     parser.add_argument('--h_range', type=float, default=2.0,
