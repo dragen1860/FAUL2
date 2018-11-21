@@ -143,11 +143,11 @@ def test_ft_steps(args, net, device, viz=None):
 
 def test_progress(args, net, device, viz=None, global_step=0):
     """
-
+    to plot ani/ars/acc with respect to training epochs.
     :param args:
     :param net:
     :param device:
-    :param visualh:
+    :param viz:
     :return:
     """
     if args.resume is None:

@@ -258,7 +258,7 @@ def main(args):
 
 
 
-        if epoch % 20 == 0:
+        if epoch % 10 == 0:
             test.test_progress(args, net, device, vis, global_step)
 
 
