@@ -94,7 +94,7 @@ def update_args(args):
         args.meta_lr = 1e-3 # learning rate
         args.finetuning_lr = 0.001 # distinct from meta, this should be smaller
         args.finetuning_steps = 55
-        args.classify_steps = 20
+        args.classify_steps = 55
         args.classify_lr = 0.01
         args.h_dim = 10
 
@@ -107,7 +107,7 @@ def update_args(args):
         args.meta_lr = 1e-3 # learning rate
         args.finetuning_lr = 0.001 # distinct from meta, this should be smaller
         args.finetuning_steps = 55
-        args.classify_steps = 20
+        args.classify_steps = 55
         args.classify_lr = 0.01
         args.h_dim = 10
 
@@ -308,7 +308,7 @@ if __name__ == '__main__':
     parser.add_argument('--finetuning_lr', type=float, default=0.1, help='finetuning lr, similar with update lr')
     parser.add_argument('--finetuning_steps', type=int, default=15, help='finetuning steps')
     parser.add_argument('--classify_lr', type=float, default=0.01, help='classifier lr')
-    parser.add_argument('--classify_steps', type=int, default=10, help='classifier update steps')
+    parser.add_argument('--classify_steps', type=int, default=50, help='classifier update steps')
     parser.add_argument('--n_way', type=int, default=5)
     parser.add_argument('--k_spt', type=int, default=5)
     parser.add_argument('--k_qry', type=int, default=20) # only for train-qry set
