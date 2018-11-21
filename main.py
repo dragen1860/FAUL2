@@ -80,7 +80,7 @@ def update_args(args):
         args.update_num = 5
         args.update_lr = 0.1
         args.finetuning_lr = 0.1
-        args.finetuning_steps = 55
+        args.finetuning_steps = 15
         args.classify_steps = 20
         args.classify_lr = 0.01
         args.h_dim = 10
@@ -92,8 +92,8 @@ def update_args(args):
         args.use_conv = False
         args.task_num = 8
         args.meta_lr = 1e-3 # learning rate
-        args.finetuning_lr = 0.001 # distinct from meta, this should be smaller
-        args.finetuning_steps = 55
+        args.finetuning_lr = 0.01 # distinct from meta, this should be smaller
+        args.finetuning_steps = 15
         args.classify_steps = 55
         args.classify_lr = 0.01
         args.h_dim = 10
@@ -105,8 +105,8 @@ def update_args(args):
         args.use_conv = False
         args.task_num = 8
         args.meta_lr = 1e-3 # learning rate
-        args.finetuning_lr = 0.001 # distinct from meta, this should be smaller
-        args.finetuning_steps = 55
+        args.finetuning_lr = 0.01 # distinct from meta, this should be smaller
+        args.finetuning_steps = 15
         args.classify_steps = 55
         args.classify_lr = 0.01
         args.h_dim = 10
@@ -150,7 +150,6 @@ def main(args):
         print('Total trainable variables:', num)
 
     net.to(device)
-
     print(net)
 
 
@@ -271,8 +270,6 @@ def main(args):
                         vis.images(train_manifold, win='train_manifold', nrow=args.h_nrow,
                                                 opts=dict(title='train_manifold:%d' % epoch))
 
-
-
         if epoch % 5 == 0:
             test.test_progress(args, net, device, vis, global_step)
 
@@ -310,7 +307,7 @@ if __name__ == '__main__':
     parser.add_argument('--classify_lr', type=float, default=0.01, help='classifier lr')
     parser.add_argument('--classify_steps', type=int, default=50, help='classifier update steps')
     parser.add_argument('--n_way', type=int, default=5)
-    parser.add_argument('--k_spt', type=int, default=5)
+    parser.add_argument('--k_spt', type=int, default=1)
     parser.add_argument('--k_qry', type=int, default=20) # only for train-qry set
     parser.add_argument('--k_qry_test', type=int, default=200, help='in test phase')
     parser.add_argument('--imgc', type=int, default=1)
