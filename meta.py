@@ -32,6 +32,7 @@ class MetaAE(nn.Module):
         self.is_vae = args.is_vae
         self.use_conv = args.use_conv
 
+        fc_hidden = args.fc_hidden
 
         if self.use_conv:
             if self.is_vae:
@@ -80,20 +81,20 @@ class MetaAE(nn.Module):
             if self.is_vae:
                 config = [
                     ('flatten', []),
-                    ('linear', [500, self.img_dim]),
+                    ('linear', [fc_hidden, self.img_dim]),
                     ('leakyrelu', [0.02, True]),
-                    ('linear', [500, 500]),
+                    ('linear', [fc_hidden, fc_hidden]),
                     ('leakyrelu', [0.02, True]),
-                    ('linear', [2* args.h_dim, 500]),
+                    ('linear', [2* args.h_dim, fc_hidden]),
                     # ('usigma_layer', [args.h_dim, 500]),
 
                     ('hidden', []),
 
-                    ('linear', [500, args.h_dim]),
+                    ('linear', [fc_hidden, args.h_dim]),
                     ('relu', [True]),
-                    ('linear', [500, 500]),
+                    ('linear', [fc_hidden, fc_hidden]),
                     ('relu', [True]),
-                    ('linear', [self.img_dim, 500]),
+                    ('linear', [self.img_dim, fc_hidden]),
                     ('reshape', [args.imgc, args.imgsz, args.imgsz]),
                     # ('sigmoid', []),
                     ('use_logits',[]) # sigmoid with logits loss
@@ -102,19 +103,19 @@ class MetaAE(nn.Module):
             else:
                 config = [
                     ('flatten', []),
-                    ('linear', [500, self.img_dim]),
+                    ('linear', [fc_hidden, self.img_dim]),
                     ('leakyrelu', [0.02, True]),
-                    ('linear', [500, 500]),
+                    ('linear', [fc_hidden, fc_hidden]),
                     ('leakyrelu', [0.02, True]),
-                    ('linear', [args.h_dim, 500]),
+                    ('linear', [args.h_dim, fc_hidden]),
 
                     ('hidden', []),
 
-                    ('linear', [500, args.h_dim]),
+                    ('linear', [fc_hidden, args.h_dim]),
                     ('relu', [True]),
-                    ('linear', [500, 500]),
+                    ('linear', [fc_hidden, fc_hidden]),
                     ('relu', [True]),
-                    ('linear', [self.img_dim, 500]),
+                    ('linear', [self.img_dim, fc_hidden]),
                     ('reshape', [args.imgc, args.imgsz, args.imgsz]),
                     # ('sigmoid', []),
                     ('use_logits',[]), # sigmoid with logits loss
@@ -334,8 +335,10 @@ class MetaAE(nn.Module):
         assert len(x_spt.shape) == 4
         assert len(x_qry.shape) == 4
 
+        losses = []
         # use theta to forward
         pred, loss, likelihood, kld = self.learner(x_spt)
+        losses.append(loss.item())
 
         # 2. grad on theta
         # clear theta grad info
@@ -351,6 +354,7 @@ class MetaAE(nn.Module):
         for k in range(1, update_num):
             # 1. run the i-th task and compute loss for k=1~K-1
             pred, loss, likelihood, kld = self.learner(x_spt, fast_weights)
+            losses.append(loss.item())
             # clear fast_weights grad info
             self.learner.zero_grad(fast_weights)
             # 2. compute grad on theta_pi
@@ -359,6 +363,8 @@ class MetaAE(nn.Module):
             # 3. theta_pi = theta_pi - train_lr * grad
             fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, fast_weights)))
 
+
+        print('FT loss:', np.array(losses).astype(np.float16))
 
         # TODO:
         with torch.no_grad():

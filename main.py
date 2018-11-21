@@ -60,7 +60,7 @@ def update_args(args):
         args.is_vae = False
         args.is_meta = True
         args.use_conv = False
-        args.task_num = 16
+        args.task_num = 8
         args.meta_lr = 1e-3
         args.update_num = 5
         args.update_lr = 0.1
@@ -75,7 +75,7 @@ def update_args(args):
         args.beta = 1.0
         args.is_meta = True
         args.use_conv = False
-        args.task_num = 16
+        args.task_num = 8
         args.meta_lr = 1e-3
         args.update_num = 5
         args.update_lr = 0.1
@@ -90,7 +90,7 @@ def update_args(args):
         args.is_vae = False
         args.is_meta = False
         args.use_conv = False
-        args.task_num = 16
+        args.task_num = 8
         args.meta_lr = 1e-3 # learning rate
         args.finetuning_lr = 0.001 # distinct from meta, this should be smaller
         args.finetuning_steps = 55
@@ -103,7 +103,7 @@ def update_args(args):
         args.beta = 1.0
         args.is_meta = False
         args.use_conv = False
-        args.task_num = 16
+        args.task_num = 8
         args.meta_lr = 1e-3 # learning rate
         args.finetuning_lr = 0.001 # distinct from meta, this should be smaller
         args.finetuning_steps = 55
@@ -122,6 +122,8 @@ def update_args(args):
 
 def main(args):
 
+
+
     args = update_args(args)
 
     torch.manual_seed(222)
@@ -132,12 +134,23 @@ def main(args):
     if args.is_meta:
         # optimizer has been embedded in model.
         net = MetaAE(args)
+        # model_parameters = filter(lambda p: p.requires_grad, net.learner.parameters())
+        # params = sum([np.prod(p.size()) for p in model_parameters])
+        # print('Total params:', params)
+        tmp = filter(lambda x: x.requires_grad, net.learner.parameters())
+        num = sum(map(lambda x:np.prod(x.shape), tmp))
+        print('total weights size:', num)
     else:
         net = AE(args, use_logits=True)
         optimizer = optim.Adam(list(net.encoder.parameters()) + list(net.decoder.parameters()),
                                lr=args.meta_lr)
 
+        tmp = filter(lambda x: x.requires_grad, list(net.encoder.parameters())+list(net.decoder.parameters()))
+        num = sum(map(lambda x:np.prod(x.shape), tmp))
+        print('total weights size:', num)
+
     net.to(device)
+
     print(net)
 
 
@@ -170,6 +183,7 @@ def main(args):
 
 
     if args.test:
+        assert args.resume is not None
         test.test_ft_steps(args, net, device)
         return
 
@@ -180,19 +194,20 @@ def main(args):
     visualh = VisualH(vis)
     vis.line([[0,0,0]], [0], win='train_loss', opts=dict(
                                                     title='train_loss',
-                                                    legend=['loss', '-lklh', 'kld'])
+                                                    legend=['loss', '-lklh', 'kld'],
+                                                    xlabel='global_step')
              )
-    vis.line([[0,0]], [[0,0]], win='classify_acc', opts=dict(legend=['before', 'after'],
-                                                             showlegend=True,
-                                                             title='class_acc'))
 
     # for test_progress
     vis.line([[0, 0]], [0], win=args.exp+'acc_on_qry01', opts=dict(title=args.exp+'acc_on_qry01',
-                                                          legend=['h_qry0', 'h_qry1']))
+                                                          legend=['h_qry0', 'h_qry1'],
+                                                            xlabel='global_step'))
     vis.line([[0, 0]], [0], win=args.exp+'ami_on_qry01', opts=dict(title=args.exp+'ami_on_qry01',
-                                                          legend=['h_qry0', 'h_qry1']))
+                                                          legend=['h_qry0', 'h_qry1'],
+                                                                   xlabel='global_step'))
     vis.line([[0, 0]], [0], win=args.exp+'ars_on_qry01', opts=dict(title=args.exp+'ars_on_qry01',
-                                                          legend=['h_qry0', 'h_qry1']))
+                                                          legend=['h_qry0', 'h_qry1'],
+                                                                   xlabel='global_step'))
 
     for epoch in range(epoch_start, args.epoch):
 
@@ -220,7 +235,7 @@ def main(args):
                                  [global_step], win='train_loss', update='append')
                         print(epoch, global_step)
                         print('loss_q:', torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
-                        print('lkhd_q:', torch.stack(likelihoods_q).detach().cpu().numpy().astype(np.float16))
+                        print('lkhd_q:', torch.stack(-likelihoods_q).detach().cpu().numpy().astype(np.float16))
                         print('klds_q:', torch.stack(klds_q).cpu().detach().numpy().astype(np.float16))
                     else:
                         # print(losses_q, likelihoods_q, klds_q)
@@ -264,14 +279,14 @@ def main(args):
 
         # save checkpoint.
         if epoch % 20 == 0:
-            date_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+            date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             mdl_file = os.path.join(args.ckpt_dir, args.exp + '_%d'%epoch  + '_' + date_str + '.mdl')
             torch.save(net.state_dict(), mdl_file)
             print('Saved into ckpt file:', mdl_file)
 
 
     # save checkpoint.
-    date_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     mdl_file = os.path.join(args.ckpt_dir, args.exp + '_%d'%args.epoch  + '_' + date_str + '.mdl')
     torch.save(net.state_dict(), mdl_file)
     print('Saved Last state ckpt file:', mdl_file)
@@ -308,6 +323,10 @@ if __name__ == '__main__':
     parser.add_argument('--resume', type=str, default=None, help='--resume ckpt.mdl file.')
     parser.add_argument('--epoch', type=int, default=300, help='total epoch for training.')
     parser.add_argument('--beta', type=float, default=1., help='hyper parameters for vae')
+
+
+    parser.add_argument('--fc_hidden', type=int, default=128, help='784=>fc_hidden=>')
+    parser.add_argument('--conv_ch', type=int, default=16, help='conv channels units')
 
     parser.add_argument('--h_range', type=float, default=2.0,
                         help='Range for uniformly distributed latent vector')

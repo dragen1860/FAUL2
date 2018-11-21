@@ -30,7 +30,7 @@ def test_ft_steps(args, net, device, viz=None):
     if args.resume is None:
         print('No ckpt file specified! make sure you are training!')
 
-    exp = args.exp + ' '
+    exp = args.exp
 
     if viz is None:
         viz = visdom.Visdom(env='test')
@@ -51,14 +51,17 @@ def test_ft_steps(args, net, device, viz=None):
                    imgsz=args.imgsz, episode_num=args.test_episode_num),
         batch_size=1, shuffle=False)
 
-    viz.line([[0, 0]], [0], win=exp+'acc_on_qry01', opts=dict(title='acc_on_qry01',
-                                                          legend=['h_qry0', 'h_qry1']))
-    viz.line([[0, 0]], [0], win=exp+'ami_on_qry01', opts=dict(title='ami_on_qry01',
-                                                          legend=['h_qry0', 'h_qry1']))
-    viz.line([[0, 0]], [0], win=exp+'ars_on_qry01', opts=dict(title='ars_on_qry01',
-                                                          legend=['h_qry0', 'h_qry1']))
+    viz.line([[0, 0]], [0], win=exp+'acc_on_qry01', opts=dict(title=exp+'acc_on_qry01',
+                                                            legend=['h_qry0', 'h_qry1'],
+                                                            xlabel='finetunning_step'))
+    viz.line([[0, 0]], [0], win=exp+'ami_on_qry01', opts=dict(title=exp+'ami_on_qry01',
+                                                            legend=['h_qry0', 'h_qry1'],
+                                                            xlabel='finetunning_step'))
+    viz.line([[0, 0]], [0], win=exp+'ars_on_qry01', opts=dict(title=exp+'ars_on_qry01',
+                                                            legend=['h_qry0', 'h_qry1'],
+                                                            xlabel='finetunning_step'))
 
-    for ft_step in range(0, 100, 5):
+    for ft_step in range(1, 100, 5):
 
         h_qry0_ami, h_qry0_ars, h_qry1_ami, h_qry1_ars = 0, 0, 0, 0
         acc0, acc1 = [], []
@@ -239,7 +242,7 @@ def test_progress(args, net, device, viz=None, global_step=0):
             viz.images(qry_x_hat1, nrow=8, win=exp+'qry_x_hat1', opts=dict(title=exp+'qry_x_hat1'))
 
 
-        if batchidx > 3:
+        if batchidx > 1:
             break
 
 

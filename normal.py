@@ -50,7 +50,7 @@ class AE(nn.Module):
 
         img_dim = self.imgc * self.imgsz * self.imgsz
 
-        n_hidden = 500
+        n_hidden = args.fc_hidden
         keep_prob = 1.
 
         self.use_logits = use_logits
