@@ -92,7 +92,7 @@ def update_args(args):
         args.use_conv = False
         args.task_num = 16
         args.meta_lr = 1e-3 # learning rate
-        args.finetuning_lr = 0.1
+        args.finetuning_lr = 0.001 # distinct from meta, this should be smaller
         args.finetuning_steps = 35
         args.classify_steps = 20
         args.classify_lr = 0.01
@@ -105,7 +105,7 @@ def update_args(args):
         args.use_conv = False
         args.task_num = 16
         args.meta_lr = 1e-3 # learning rate
-        args.finetuning_lr = 0.1
+        args.finetuning_lr = 0.001 # distinct from meta, this should be smaller
         args.finetuning_steps = 35
         args.classify_steps = 20
         args.classify_lr = 0.01
@@ -187,11 +187,11 @@ def main(args):
                                                              title='class_acc'))
 
     # for test_progress
-    vis.line([[0, 0]], [0], win=args.exp+'acc_on_qry01', opts=dict(title='acc_on_qry01',
+    vis.line([[0, 0]], [0], win=args.exp+'acc_on_qry01', opts=dict(title=args.exp+'acc_on_qry01',
                                                           legend=['h_qry0', 'h_qry1']))
-    vis.line([[0, 0]], [0], win=args.exp+'ami_on_qry01', opts=dict(title='ami_on_qry01',
+    vis.line([[0, 0]], [0], win=args.exp+'ami_on_qry01', opts=dict(title=args.exp+'ami_on_qry01',
                                                           legend=['h_qry0', 'h_qry1']))
-    vis.line([[0, 0]], [0], win=args.exp+'ars_on_qry01', opts=dict(title='ars_on_qry01',
+    vis.line([[0, 0]], [0], win=args.exp+'ars_on_qry01', opts=dict(title=args.exp+'ars_on_qry01',
                                                           legend=['h_qry0', 'h_qry1']))
 
     for epoch in range(epoch_start, args.epoch):
