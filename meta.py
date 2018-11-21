@@ -81,20 +81,20 @@ class MetaAE(nn.Module):
             if self.is_vae:
                 config = [
                     ('flatten', []),
-                    ('linear', [fc_hidden, self.img_dim]),
+                    ('linear', [fc_hidden//2, self.img_dim]),
                     ('leakyrelu', [0.02, True]),
-                    ('linear', [fc_hidden, fc_hidden]),
+                    ('linear', [fc_hidden//4, fc_hidden//2]),
                     ('leakyrelu', [0.02, True]),
-                    ('linear', [2* args.h_dim, fc_hidden]),
+                    ('linear', [2* args.h_dim, fc_hidden//4]),
                     # ('usigma_layer', [args.h_dim, 500]),
 
                     ('hidden', []),
 
-                    ('linear', [fc_hidden, args.h_dim]),
+                    ('linear', [fc_hidden//4, args.h_dim]),
                     ('relu', [True]),
-                    ('linear', [fc_hidden, fc_hidden]),
+                    ('linear', [fc_hidden//2, fc_hidden//4]),
                     ('relu', [True]),
-                    ('linear', [self.img_dim, fc_hidden]),
+                    ('linear', [self.img_dim, fc_hidden//2]),
                     ('reshape', [args.imgc, args.imgsz, args.imgsz]),
                     # ('sigmoid', []),
                     ('use_logits',[]) # sigmoid with logits loss
@@ -103,19 +103,19 @@ class MetaAE(nn.Module):
             else:
                 config = [
                     ('flatten', []),
-                    ('linear', [fc_hidden, self.img_dim]),
+                    ('linear', [fc_hidden//2, self.img_dim]),
                     ('leakyrelu', [0.02, True]),
-                    ('linear', [fc_hidden, fc_hidden]),
+                    ('linear', [fc_hidden//4, fc_hidden//2]),
                     ('leakyrelu', [0.02, True]),
-                    ('linear', [args.h_dim, fc_hidden]),
+                    ('linear', [args.h_dim, fc_hidden//4]),
 
                     ('hidden', []),
 
-                    ('linear', [fc_hidden, args.h_dim]),
+                    ('linear', [fc_hidden//4, args.h_dim]),
                     ('relu', [True]),
-                    ('linear', [fc_hidden, fc_hidden]),
+                    ('linear', [fc_hidden//2, fc_hidden//4]),
                     ('relu', [True]),
-                    ('linear', [self.img_dim, fc_hidden]),
+                    ('linear', [self.img_dim, fc_hidden//2]),
                     ('reshape', [args.imgc, args.imgsz, args.imgsz]),
                     # ('sigmoid', []),
                     ('use_logits',[]), # sigmoid with logits loss

@@ -68,7 +68,7 @@ def update_args(args):
         args.finetuning_steps = 55
         args.classify_steps = 20
         args.classify_lr = 0.01
-        args.h_dim = 20
+        args.h_dim = 10
 
     elif exp == 'meta-fc-vae':
         args.is_vae = True
@@ -83,7 +83,7 @@ def update_args(args):
         args.finetuning_steps = 55
         args.classify_steps = 20
         args.classify_lr = 0.01
-        args.h_dim = 20
+        args.h_dim = 10
 
 
     elif exp == 'normal-fc-ae':
@@ -96,7 +96,7 @@ def update_args(args):
         args.finetuning_steps = 55
         args.classify_steps = 20
         args.classify_lr = 0.01
-        args.h_dim = 20
+        args.h_dim = 10
 
     elif exp == 'normal-fc-vae':
         args.is_vae = True
@@ -109,7 +109,7 @@ def update_args(args):
         args.finetuning_steps = 55
         args.classify_steps = 20
         args.classify_lr = 0.01
-        args.h_dim = 20
+        args.h_dim = 10
 
     else:
         print('Wrong Exp name:', exp)
@@ -139,7 +139,7 @@ def main(args):
         # print('Total params:', params)
         tmp = filter(lambda x: x.requires_grad, net.learner.parameters())
         num = sum(map(lambda x:np.prod(x.shape), tmp))
-        print('total weights size:', num)
+        print('Total trainable variables:', num)
     else:
         net = AE(args, use_logits=True)
         optimizer = optim.Adam(list(net.encoder.parameters()) + list(net.decoder.parameters()),
@@ -147,7 +147,7 @@ def main(args):
 
         tmp = filter(lambda x: x.requires_grad, list(net.encoder.parameters())+list(net.decoder.parameters()))
         num = sum(map(lambda x:np.prod(x.shape), tmp))
-        print('total weights size:', num)
+        print('Total trainable variables:', num)
 
     net.to(device)
 
@@ -310,7 +310,7 @@ if __name__ == '__main__':
     parser.add_argument('--classify_lr', type=float, default=0.01, help='classifier lr')
     parser.add_argument('--classify_steps', type=int, default=10, help='classifier update steps')
     parser.add_argument('--n_way', type=int, default=5)
-    parser.add_argument('--k_spt', type=int, default=20)
+    parser.add_argument('--k_spt', type=int, default=5)
     parser.add_argument('--k_qry', type=int, default=20) # only for train-qry set
     parser.add_argument('--k_qry_test', type=int, default=200, help='in test phase')
     parser.add_argument('--imgc', type=int, default=1)
@@ -325,7 +325,7 @@ if __name__ == '__main__':
     parser.add_argument('--beta', type=float, default=1., help='hyper parameters for vae')
 
 
-    parser.add_argument('--fc_hidden', type=int, default=128, help='784=>fc_hidden=>')
+    parser.add_argument('--fc_hidden', type=int, default=64, help='784=>fc_hidden=>')
     parser.add_argument('--conv_ch', type=int, default=16, help='conv channels units')
 
     parser.add_argument('--h_range', type=float, default=2.0,
