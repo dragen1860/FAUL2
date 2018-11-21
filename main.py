@@ -281,7 +281,7 @@ if __name__ == '__main__':
     parser.add_argument('--meta_lr', type=float, default=1e-3, help='meta lr or general lr for normal ae/vae')
     parser.add_argument('--update_num', type=int, default=5, help='update num')
     parser.add_argument('--update_lr', type=float, default=0.5, help='update lr')
-    parser.add_argument('--finetuning_lr', type=float, default=0.1, help='finetuning lr, similar with update lr')
+    parser.add_argument('--finetuning_lr', type=float, default=0.5, help='finetuning lr, similar with update lr')
     parser.add_argument('--finetuning_steps', type=int, default=15, help='finetuning steps')
     parser.add_argument('--classify_lr', type=float, default=0.01, help='classifier lr')
     parser.add_argument('--classify_steps', type=int, default=50, help='classifier update steps')
