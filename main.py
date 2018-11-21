@@ -235,7 +235,7 @@ def main(args):
                                  [global_step], win='train_loss', update='append')
                         print(epoch, global_step)
                         print('loss_q:', torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
-                        print('lkhd_q:', torch.stack(-likelihoods_q).detach().cpu().numpy().astype(np.float16))
+                        print('lkhd_q:', torch.stack(likelihoods_q).detach().cpu().numpy().astype(np.float16))
                         print('klds_q:', torch.stack(klds_q).cpu().detach().numpy().astype(np.float16))
                     else:
                         # print(losses_q, likelihoods_q, klds_q)
