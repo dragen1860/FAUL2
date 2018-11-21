@@ -13,7 +13,7 @@ from    normal import AE
 from    mnistNShot import MnistNShot
 
 from    visualization import VisualH
-from    test import test
+import  test
 
 def update_args(args):
 
@@ -65,7 +65,7 @@ def update_args(args):
         args.update_num = 5
         args.update_lr = 0.1
         args.finetuning_lr = 0.1
-        args.finetuning_steps = 15
+        args.finetuning_steps = 35
         args.classify_steps = 20
         args.classify_lr = 0.01
         args.h_dim = 20
@@ -80,7 +80,7 @@ def update_args(args):
         args.update_num = 5
         args.update_lr = 0.1
         args.finetuning_lr = 0.1
-        args.finetuning_steps = 15
+        args.finetuning_steps = 35
         args.classify_steps = 20
         args.classify_lr = 0.01
         args.h_dim = 20
@@ -93,7 +93,7 @@ def update_args(args):
         args.task_num = 16
         args.meta_lr = 1e-3 # learning rate
         args.finetuning_lr = 0.1
-        args.finetuning_steps = 15
+        args.finetuning_steps = 35
         args.classify_steps = 20
         args.classify_lr = 0.01
         args.h_dim = 20
@@ -106,7 +106,7 @@ def update_args(args):
         args.task_num = 16
         args.meta_lr = 1e-3 # learning rate
         args.finetuning_lr = 0.1
-        args.finetuning_steps = 15
+        args.finetuning_steps = 35
         args.classify_steps = 20
         args.classify_lr = 0.01
         args.h_dim = 20
@@ -157,23 +157,27 @@ def main(args):
 
     # try to resume from ckpt.mdl file
     epoch_start = 0
+    global_step = 0
     if args.resume is not None:
         # ckpt/normal-fc-vae_640_2018-11-20_09:58:58.mdl
         mdl_file = args.resume
         epoch_start = int(mdl_file.split('_')[-3])
         net.load_state_dict(torch.load(mdl_file))
-        print('Resume from:', args.resume, 'epoch:', epoch_start)
+        global_step = int(epoch_start * args.train_episode_num / args.task_num)
+        print('Resume from:', args.resume, 'epoch:', epoch_start, 'global_step:', global_step)
     else:
         print('Training/test from scratch...')
 
 
     if args.test:
-        test(args, net, device)
+        test.test_ft_steps(args, net, device)
         return
+
+
+
 
     vis = visdom.Visdom(env=args.exp)
     visualh = VisualH(vis)
-    global_step = 0
     vis.line([[0,0,0]], [0], win='train_loss', opts=dict(
                                                     title='train_loss',
                                                     legend=['loss', '-lklh', 'kld'])
@@ -181,6 +185,14 @@ def main(args):
     vis.line([[0,0]], [[0,0]], win='classify_acc', opts=dict(legend=['before', 'after'],
                                                              showlegend=True,
                                                              title='class_acc'))
+
+    # for test_progress
+    vis.line([[0, 0]], [0], win=args.exp+'acc_on_qry01', opts=dict(title='acc_on_qry01',
+                                                          legend=['h_qry0', 'h_qry1']))
+    vis.line([[0, 0]], [0], win=args.exp+'ami_on_qry01', opts=dict(title='ami_on_qry01',
+                                                          legend=['h_qry0', 'h_qry1']))
+    vis.line([[0, 0]], [0], win=args.exp+'ars_on_qry01', opts=dict(title='ars_on_qry01',
+                                                          legend=['h_qry0', 'h_qry1']))
 
     for epoch in range(epoch_start, args.epoch):
 
@@ -247,7 +259,7 @@ def main(args):
 
 
         if epoch % 20 == 0:
-            test(args, net, device, vis)
+            test.test_progress(args, net, device, vis, global_step)
 
 
         # save checkpoint.
@@ -258,6 +270,11 @@ def main(args):
             print('Saved into ckpt file:', mdl_file)
 
 
+    # save checkpoint.
+    date_str = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    mdl_file = os.path.join(args.ckpt_dir, args.exp + '_%d'%args.epoch  + '_' + date_str + '.mdl')
+    torch.save(net.state_dict(), mdl_file)
+    print('Saved Last state ckpt file:', mdl_file)
 
 
 
