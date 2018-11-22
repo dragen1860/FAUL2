@@ -11663,3 +11663,12 @@ INFO:tornado.access:200 POST /win_exists (127.0.0.1) 0.59ms
 INFO:tornado.access:200 POST /update (127.0.0.1) 0.92ms
 INFO:tornado.access:200 POST /win_exists (127.0.0.1) 0.42ms
 INFO:tornado.access:200 POST /update (127.0.0.1) 0.56ms
+INFO:tornado.access:200 POST /env/normal-conv-ae (127.0.0.1) 0.35ms
+INFO:tornado.access:101 GET /vis_socket (127.0.0.1) 0.71ms
+INFO:root:Opened visdom socket from ip: 127.0.0.1
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.59ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.53ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.54ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.54ms
+INFO:tornado.access:200 POST /win_exists (127.0.0.1) 0.44ms
+INFO:tornado.access:200 POST /update (127.0.0.1) 1.10ms
