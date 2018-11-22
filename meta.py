@@ -34,48 +34,33 @@ class MetaAE(nn.Module):
 
         fc_hidden = args.fc_hidden
 
+
+
         if self.use_conv:
             if self.is_vae:
+                raise NotImplementedError
+            else:
                 config = [
-                    ('conv2d', [16, 1, 3, 3, 3, 1]),  # the first
+                    ('conv2d', [32, 1, 5, 5, 5, 0]),  # the first
                     ('relu', [True]),
                     ('max_pool2d', [2, 2, 0]),
-                    ('conv2d', [8, 16, 3, 3, 2, 1]),  #
+                    ('conv2d', [32, 32, 3, 3, 3, 0]),  #
                     ('relu', [True]),
-                    ('max_pool2d', [2, 1, 0]),
+                    ('max_pool2d', [2, 2, 0]),
                     ('flatten', []),
 
                     ('hidden', []),  # hidden variable
 
                     # [ch_out, ch_in]
-                    ('reshape', [8, 2, 2]),
-                    ('convt2d', [8, 16, 3, 3, 2, 0]),  # defactor1
+                    ('reshape', [32, 1, 1]),
+                    ('convt2d', [32, 32, 3, 3, 1, 0]),  # defactor1
                     ('relu', [True]),
-                    ('convt2d', [16, 8, 5, 5, 3, 1]),
+                    ('convt2d', [32, 32, 3, 3, 2, 0]),
                     ('relu', [True]),
-                    ('convt2d', [8, 1, 2, 2, 2, 1]),
-                    ('tanh', [])
-                ]
-            else:
-                config = [
-                    ('conv2d', [16, 1, 3, 3, 3, 1]),  # the first
+                    ('convt2d', [32, 32, 3, 3, 3, 0]),
                     ('relu', [True]),
-                    ('max_pool2d', [2, 2, 0]),
-                    ('conv2d', [8, 16, 3, 3, 2, 1]),  #
-                    ('relu', [True]),
-                    ('max_pool2d', [2, 1, 0]),
-                    ('flatten', []), # [b, 8, 2, 2] => [b, 32]
-
-                    ('hidden', []),  # hidden variable
-
-                    ('reshape', [8, 2, 2]), # [b, 32] => [b, 8, 2, 2]
-                    # [ch_out, ch_in]
-                    ('convt2d', [8, 16, 3, 3, 2, 0]),  # defactor1
-                    ('relu', [True]),
-                    ('convt2d', [16, 8, 5, 5, 3, 1]),
-                    ('relu', [True]),
-                    ('convt2d', [8, 1, 2, 2, 2, 1]),
-                    ('tanh', [])
+                    ('convt2d', [32, 1, 4, 4, 3, 0]),
+                    ('use_logits', [])
                 ]
         else: # fully-connected
             if self.is_vae:
@@ -126,6 +111,9 @@ class MetaAE(nn.Module):
         self.meta_optim = optim.Adam(self.learner.parameters(), lr=self.meta_lr)
 
         # hidden to n_way
+        h = self.forward_encoder(torch.Tensor(2, args.imgc, args.imgsz, args.imgsz))
+        args.h_dim = h.size(1)
+        print('overwrite h_dim from actual computation of network.')
         self.classifier = nn.Sequential(nn.Linear(args.h_dim, self.n_way))
 
     def forward_encoder(self, x):
@@ -257,12 +245,10 @@ class MetaAE(nn.Module):
                 grad = torch.autograd.grad(loss, fast_weights)
                 total_norm = self.clip_grad_by_norm_(grad, 10)
 
-                if total_norm > 10:
-                    # 3. theta_pi = theta_pi - train_lr * grad
-                    fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, fast_weights)))
-                else:
-                    pass
-                    #print('skip gradient.', total_norm)
+
+                # 3. theta_pi = theta_pi - train_lr * grad
+                fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, fast_weights)))
+
 
                 pred_q, loss_q, likelihood_q, kld_q = self.learner(x_qry[i], fast_weights)
                 update_statistic(loss, likelihood, kld, loss_q, likelihood_q, kld_q, k + 1)

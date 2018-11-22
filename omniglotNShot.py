@@ -105,7 +105,7 @@ class OmniglotNShot:
         data_cache = []
 
         # print('preload next 50 caches of batchsz of batch.')
-        for sample in range(500):  # num of episodes
+        for sample in range(10):  # num of episodes
 
             x_spts, y_spts, x_qrys, y_qrys = [], [], [], []
             for i in range(self.batchsz):  # one batch means one set
@@ -139,17 +139,17 @@ class OmniglotNShot:
 
 
             # [b, setsz, 1, 84, 84]
-            x_spts = np.array(x_spts).reshape(self.batchsz, setsz, 1, self.resize, self.resize)
-            y_spts = np.array(y_spts).reshape(self.batchsz, setsz)
+            x_spts = np.array(x_spts).astype(np.float32).reshape(self.batchsz, setsz, 1, self.resize, self.resize)
+            y_spts = np.array(y_spts).astype(np.int).reshape(self.batchsz, setsz)
             # [b, qrysz, 1, 84, 84]
-            x_qrys = np.array(x_qrys).reshape(self.batchsz, querysz, 1, self.resize, self.resize)
-            y_qrys = np.array(y_qrys).reshape(self.batchsz, querysz)
+            x_qrys = np.array(x_qrys).astype(np.float32).reshape(self.batchsz, querysz, 1, self.resize, self.resize)
+            y_qrys = np.array(y_qrys).astype(np.int).reshape(self.batchsz, querysz)
 
             data_cache.append([x_spts, y_spts, x_qrys, y_qrys])
 
         return data_cache
 
-    def next(self, mode):
+    def next(self, mode='train'):
         """
         Gets next batch from the dataset with name.
         :param mode: The name of the splitting (one of "train", "val", "test")
@@ -178,7 +178,7 @@ if __name__ == '__main__':
     # plt.ion()
     viz = visdom.Visdom(env='omniglot_view')
 
-    db = OmniglotNShot('db/omniglot', batchsz=20, n_way=5, k_shot=5, k_query=15, imgsz=84)
+    db = OmniglotNShot('db/omniglot', batchsz=20, n_way=5, k_shot=5, k_query=15, imgsz=64)
 
     for i in range(1000):
         x_spt, y_spt, x_qry, y_qry = db.next('train')

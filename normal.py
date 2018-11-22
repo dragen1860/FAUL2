@@ -14,6 +14,7 @@ class Flatten(nn.Module):
         super(Flatten, self).__init__()
 
     def forward(self, x):
+        # print('before flaten:', x.shape)
         return x.view(x.size(0), -1)
 
 class Reshape(nn.Module):
@@ -24,6 +25,8 @@ class Reshape(nn.Module):
 
     def forward(self, x):
         return x.view(-1, *self.shape)
+
+
 
 class AE(nn.Module):
     """
@@ -58,7 +61,34 @@ class AE(nn.Module):
             print('Use logits on last layer, make sure no implicit sigmoid in network config!')
 
         if self.use_conv:
-            raise  NotImplementedError
+
+            if self.is_vae:
+                raise NotImplementedError
+            else:
+                self.encoder = nn.Sequential(
+                    nn.Conv2d(1, 32, kernel_size=5, stride=5, padding=0),
+                    nn.ReLU(inplace=True),
+                    nn.MaxPool2d(kernel_size=2, stride=2),
+                    nn.Conv2d(32, 32, kernel_size=3, stride=3, padding=0),
+                    nn.ReLU(inplace=True),
+                    nn.MaxPool2d(kernel_size=2, stride=2),
+                    Flatten(), # [b, 32, 1, 1]
+
+                )
+
+            self.decoder = nn.Sequential(
+                Reshape(32, 1, 1),
+                nn.ConvTranspose2d(32, 32, kernel_size=3, stride=1, padding=0),
+                nn.ReLU(inplace=True),
+                nn.ConvTranspose2d(32, 32, kernel_size=3, stride=2, padding=0),
+                nn.ReLU(inplace=True),
+                nn.ConvTranspose2d(32, 32, kernel_size=3, stride=3, padding=0),
+                nn.ReLU(inplace=True),
+                nn.ConvTranspose2d(32, 1, kernel_size=4, stride=3, padding=0),
+
+            )
+
+
         else: # fc
             if self.is_vae:
                 # [b, imgc*imgsz*imgsz] => [b, q_h_d*2]
@@ -116,8 +146,13 @@ class AE(nn.Module):
         else:
             self.criteon = nn.BCELoss(reduction='sum')
 
-        # self.optimizer = optim.Adam(list(self.encoder.parameters())+list(self.decoder.parameters()),
-        #                             lr=self.lr)
+
+
+        tmp = self.encoder(torch.Tensor(2, self.imgc, self.imgsz, self.imgsz))
+        out = self.decoder(tmp)
+        print('x:', [2, self.imgc, self.imgsz, self.imgsz], 'h:', tmp.shape, 'out:', out.shape, 'h_dim:', self.h_dim)
+        self.h_dim = args.h_dim = tmp.size(1)
+        print('overwrite h_dim from actual computation of network.')
 
         # hidden to n_way, based on h
         self.classifier = nn.Sequential(nn.Linear(self.h_dim, self.n_way))
@@ -125,9 +160,6 @@ class AE(nn.Module):
         self.classify_reset(self.encoder)
         self.classify_reset(self.decoder)
         self.classify_reset(self.classifier)
-
-        print('x:', [2, self.imgc, self.imgsz, self.imgsz], 'h:', [2, self.h_dim])
-
 
 
     def forward(self, x_spt, y_spt, x_qry, y_qry):

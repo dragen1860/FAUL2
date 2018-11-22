@@ -10,10 +10,10 @@ from    datetime import datetime
 
 from    meta import MetaAE
 from    normal import AE
-from    mnistNShot import MnistNShot
+from    omniglotNShot import OmniglotNShot
 
 from    visualization import VisualH
-import  test
+import  omni_test as test
 
 def update_args(args):
 
@@ -32,29 +32,21 @@ def update_args(args):
         args.is_vae = False
         args.is_meta = True
         args.use_conv = True
-        args.task_num = 4
-        args.meta_lr = 1e-3
-        args.update_num = 5
-        args.update_lr = 0.01
         args.finetuning_lr = 0.01
         args.finetuning_steps = 15
-        args.classify_steps = 10
-        args.classify_lr = 0.01
-        args.h_dim = 8*2*2
 
     elif exp == 'meta-conv-vae':
         args.is_vae = True
         args.is_meta = True
         args.use_conv = True
-        args.task_num = 4
-        args.meta_lr = 1e-3
-        args.update_num = 5
-        args.update_lr = 0.01
         args.finetuning_lr = 0.01
         args.finetuning_steps = 15
-        args.classify_steps = 10
-        args.classify_lr = 0.01
-        args.h_dim = 2
+
+    elif exp == 'normal-conv-ae':
+        args.is_vae = False
+        args.is_meta = False
+        args.use_conv = True
+
 
     elif exp == 'meta-fc-ae':
         args.is_vae = False
@@ -117,7 +109,7 @@ def main(args):
         # params = sum([np.prod(p.size()) for p in model_parameters])
         # print('Total params:', params)
         tmp = filter(lambda x: x.requires_grad, net.learner.parameters())
-        num = sum(map(lambda x:np.prod(x.shape), tmp))
+        num = sum(map(lambda x: np.prod(x.shape), tmp))
         print('Total trainable variables:', num)
     else:
         net = AE(args, use_logits=True)
@@ -148,14 +140,12 @@ def main(args):
 
     # try to resume from ckpt.mdl file
     epoch_start = 0
-    global_step = 0
     if args.resume is not None:
         # ckpt/normal-fc-vae_640_2018-11-20_09:58:58.mdl
         mdl_file = args.resume
         epoch_start = int(mdl_file.split('_')[-3])
         net.load_state_dict(torch.load(mdl_file))
-        global_step = int(epoch_start * args.train_episode_num / args.task_num)
-        print('Resume from:', args.resume, 'epoch:', epoch_start, 'global_step:', global_step)
+        print('Resume from:', args.resume, 'epoch/batches:', epoch_start)
     else:
         print('Training/test from scratch...')
 
@@ -170,93 +160,89 @@ def main(args):
 
     vis = visdom.Visdom(env=args.exp)
     visualh = VisualH(vis)
-    vis.line([[0,0,0]], [0], win=args.exp+'train_loss', opts=dict(
+    vis.line([[0,0,0]], [epoch_start], win=args.exp+'train_loss', opts=dict(
                                                     title=args.exp+'train_qloss',
                                                     legend=['loss', '-lklh', 'kld'],
                                                     xlabel='global_step'))
 
     # for test_progress
-    vis.line([[0, 0]], [0], win=args.exp+'acc_on_qry01', opts=dict(title=args.exp+'acc_on_qry01',
+    vis.line([[0, 0]], [epoch_start], win=args.exp+'acc_on_qry01', opts=dict(title=args.exp+'acc_on_qry01',
                                                           legend=['h_qry0', 'h_qry1'],
                                                             xlabel='global_step'))
-    vis.line([[0, 0]], [0], win=args.exp+'ami_on_qry01', opts=dict(title=args.exp+'ami_on_qry01',
+    vis.line([[0, 0]], [epoch_start], win=args.exp+'ami_on_qry01', opts=dict(title=args.exp+'ami_on_qry01',
                                                           legend=['h_qry0', 'h_qry1'],
                                                                    xlabel='global_step'))
-    vis.line([[0, 0]], [0], win=args.exp+'ars_on_qry01', opts=dict(title=args.exp+'ars_on_qry01',
+    vis.line([[0, 0]], [epoch_start], win=args.exp+'ars_on_qry01', opts=dict(title=args.exp+'ars_on_qry01',
                                                           legend=['h_qry0', 'h_qry1'],
                                                                    xlabel='global_step'))
 
-    for epoch in range(epoch_start, args.epoch):
+    # 1. train
+    db_train = OmniglotNShot('db/omniglot', batchsz=args.task_num, n_way=args.n_way, k_shot=args.k_spt,
+                             k_query=args.k_qry, imgsz=args.imgsz)
 
-        # 1. train
-        db_train = DataLoader(
-            MnistNShot('db/mnist', training=True, n_way=args.n_way, k_spt=args.k_spt, k_qry=args.k_qry,
-                       imgsz=args.imgsz, episode_num=args.train_episode_num),
-            batch_size=args.task_num, shuffle=True)
-
-        # train
-        for batchidx, (spt_x, spt_y, qry_x, qry_y) in enumerate(db_train):
-            spt_x, spt_y, qry_x, qry_y = spt_x.to(device), spt_y.to(device), qry_x.to(device), qry_y.to(device)
+    # epoch = batch number here.
+    for epoch in range(epoch_start, args.train_episode_num):
+        spt_x, spt_y, qry_x, qry_y = db_train.next()
+        spt_x, spt_y, qry_x, qry_y = torch.from_numpy(spt_x).to(device), torch.from_numpy(spt_y).to(device), \
+                                     torch.from_numpy(qry_x).to(device), torch.from_numpy(qry_y).to(device)
 
 
-            if args.is_meta: # for meta
-                loss_optim, losses_q, likelihoods_q, klds_q = net(spt_x, spt_y, qry_x, qry_y)
+        if args.is_meta: # for meta
+            loss_optim, losses_q, likelihoods_q, klds_q = net(spt_x, spt_y, qry_x, qry_y)
 
 
-                global_step += 1
-                if global_step % 300 == 0:
+            if epoch % 300 == 0:
 
-                    if args.is_vae:
-                        # print(losses_q, likelihoods_q, klds_q)
-                        vis.line([[losses_q[-1].item(), -likelihoods_q[-1].item(), klds_q[-1].item()]],
-                                 [global_step], win=args.exp+'train_loss', update='append')
-                        print(epoch, global_step)
-                        print('loss_q:', torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
-                        print('lkhd_q:', torch.stack(likelihoods_q).detach().cpu().numpy().astype(np.float16))
-                        print('klds_q:', torch.stack(klds_q).cpu().detach().numpy().astype(np.float16))
-                    else:
-                        # print(losses_q, likelihoods_q, klds_q)
-                        vis.line([[losses_q[-1].item(), 0, 0]],
-                                 [global_step], win=args.exp+'train_loss', update='append')
-                        print(epoch, global_step, torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
+                if args.is_vae:
+                    # print(losses_q, likelihoods_q, klds_q)
+                    vis.line([[losses_q[-1].item(), -likelihoods_q[-1].item(), klds_q[-1].item()]],
+                             [epoch], win=args.exp+'train_loss', update='append')
+                    print(epoch)
+                    print('loss_q:', torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
+                    print('lkhd_q:', torch.stack(likelihoods_q).detach().cpu().numpy().astype(np.float16))
+                    print('klds_q:', torch.stack(klds_q).cpu().detach().numpy().astype(np.float16))
+                else:
+                    # print(losses_q, likelihoods_q, klds_q)
+                    vis.line([[losses_q[-1].item(), 0, 0]],
+                             [epoch], win=args.exp+'train_loss', update='append')
+                    print(epoch, torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
 
 
 
 
-            else: # for normal vae/ae
+        else: # for normal vae/ae
 
-                loss_optim, _, likelihood, kld = net(spt_x, spt_y, qry_x, qry_y)
-                optimizer.zero_grad()
-                loss_optim.backward()
-                torch.nn.utils.clip_grad_norm_(list(net.encoder.parameters())+list(net.decoder.parameters()), 10)
-                optimizer.step()
+            loss_optim, _, likelihood, kld = net(spt_x, spt_y, qry_x, qry_y)
+            optimizer.zero_grad()
+            loss_optim.backward()
+            torch.nn.utils.clip_grad_norm_(list(net.encoder.parameters())+list(net.decoder.parameters()), 10)
+            optimizer.step()
 
-                global_step += 1
-                if global_step % 300 == 0:
+            if epoch % 300 == 0:
 
-                    print(epoch, global_step, loss_optim.item())
-                    if not args.is_vae:
-                        vis.line([[loss_optim.item(), 0, 0]],
-                                 [global_step], win='train_loss', update='append')
-                    else:
-                        vis.line([[loss_optim.item(), -likelihood.item(), kld.item()]],
-                                 [global_step], win='train_loss', update='append')
+                print(epoch, loss_optim.item())
+                if not args.is_vae:
+                    vis.line([[loss_optim.item(), 0, 0]],
+                             [epoch], win='train_loss', update='append')
+                else:
+                    vis.line([[loss_optim.item(), -likelihood.item(), kld.item()]],
+                             [epoch], win='train_loss', update='append')
 
-                    # if args.h_dim == 2:
-                    #     # can not use net.decoder directly!!!
-                    #     train_manifold = net.forward_decoder(h_manifold)
-                    #     vis.images(train_manifold, win='train_manifold', nrow=args.h_nrow,
-                    #                             opts=dict(title='train_manifold:%d' % epoch))
-
+                # if args.h_dim == 2:
+                #     # can not use net.decoder directly!!!
+                #     train_manifold = net.forward_decoder(h_manifold)
+                #     vis.images(train_manifold, win='train_manifold', nrow=args.h_nrow,
+                #                             opts=dict(title='train_manifold:%d' % epoch))
 
 
 
-        if epoch % 2 == 0:
-            test.test_progress(args, net, device, vis, global_step)
+
+        if epoch % 5000 == 0:
+            test.test_progress(args, net, device, vis, epoch)
 
 
         # save checkpoint.
-        if epoch % 20 == 0:
+        if epoch % 20000 == 0:
             date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             mdl_file = os.path.join(args.ckpt_dir, args.exp + '_%d'%epoch  + '_' + date_str + '.mdl')
             torch.save(net.state_dict(), mdl_file)
@@ -282,24 +268,23 @@ if __name__ == '__main__':
     parser.add_argument('--task_num', type=int, default=4, help='task num, for meta and general both')
     parser.add_argument('--meta_lr', type=float, default=1e-3, help='meta lr or general lr for normal ae/vae')
     parser.add_argument('--update_num', type=int, default=5, help='update num')
-    parser.add_argument('--update_lr', type=float, default=0.2, help='update lr')
+    parser.add_argument('--update_lr', type=float, default=0.1, help='update lr')
     parser.add_argument('--finetuning_lr', type=float, default=0.1, help='finetuning lr, similar with update lr')
     parser.add_argument('--finetuning_steps', type=int, default=5, help='finetuning steps')
     parser.add_argument('--classify_lr', type=float, default=0.05, help='classifier lr')
     parser.add_argument('--classify_steps', type=int, default=50, help='classifier update steps')
-    parser.add_argument('--n_way', type=int, default=4)
+    parser.add_argument('--n_way', type=int, default=5)
     parser.add_argument('--k_spt', type=int, default=1)
-    parser.add_argument('--k_qry', type=int, default=20) # only for train-qry set
-    parser.add_argument('--k_qry_test', type=int, default=200, help='in test phase')
+    parser.add_argument('--k_qry', type=int, default=15) # only for train-qry set
+    parser.add_argument('--k_qry_test', type=int, default=15, help='in test phase')
     parser.add_argument('--imgc', type=int, default=1)
-    parser.add_argument('--imgsz', type=int, default=28)
+    parser.add_argument('--imgsz', type=int, default=64)
     parser.add_argument('--h_dim', type=int, default=20, help='h dim for vae. you should specify net manually for ae')
-    parser.add_argument('--train_episode_num', type=int, default=5000)
+    parser.add_argument('--train_episode_num', type=int, default=500000)
     parser.add_argument('--test_episode_num', type=int, default=100)
     parser.add_argument('--ckpt_dir', type=str, default='ckpt', help='checkpoint save directory')
     parser.add_argument('--test_dir', type=str, default='results', help='directory to save test results images and figures')
     parser.add_argument('--resume', type=str, default=None, help='--resume ckpt.mdl file.')
-    parser.add_argument('--epoch', type=int, default=300, help='total epoch for training.')
     parser.add_argument('--beta', type=float, default=1., help='hyper parameters for vae')
 
 
