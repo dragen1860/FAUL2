@@ -1,31 +1,37 @@
-from omniglot import Omniglot
-import torchvision.transforms as transforms
-from PIL import Image
-import os.path
-import numpy as np
+from    omniglot import Omniglot
+import  torchvision.transforms as transforms
+from    PIL import Image
+import  os.path
+import  numpy as np
 
 
-class OmniglotNShot():
+class OmniglotNShot:
+
     def __init__(self, root, batchsz, n_way, k_shot, k_query, imgsz):
         """
-
-        :param dataroot:
-        :param batch_size:
+        Different from mnistNShot, the
+        :param root:
+        :param batchsz:
         :param n_way:
         :param k_shot:
+        :param k_qry:
+        :param imgsz:
         """
 
         self.resize = imgsz
-        if not os.path.isfile(os.path.join(root, 'omni.npy')):
+        if not os.path.isfile(os.path.join(root, 'omniglot.npy')):
             # if root/data.npy does not exist, just download it
             self.x = Omniglot(root, download=True,
                               transform=transforms.Compose([lambda x: Image.open(x).convert('L'),
-                                                            transforms.Resize(self.resize),
-                                                            lambda x: np.reshape(x, (self.resize, self.resize, 1))]))
+                                                            lambda x: x.resize((imgsz, imgsz)),
+                                                            lambda x: np.reshape(x, (imgsz, imgsz, 1)),
+                                                            lambda x: np.transpose(x, [2, 0, 1]),
+                                                            lambda x: x/255.])
+                              )
 
-            temp = dict()  # {label:img1, img2..., 20 imgs in total, 1623 label}
+            temp = dict()  # {label:img1, img2..., 20 imgs, label2: img1, img2,... in total, 1623 label}
             for (img, label) in self.x:
-                if label in temp:
+                if label in temp.keys():
                     temp[label].append(img)
                 else:
                     temp[label] = [img]
@@ -35,33 +41,35 @@ class OmniglotNShot():
                 self.x.append(np.array(imgs))
 
             # as different class may have different number of imgs
-            self.x = np.array(self.x)  # [[20 imgs],..., 1623 classes in total]
+            self.x = np.array(self.x).astype(np.float)  # [[20 imgs],..., 1623 classes in total]
             # each character contains 20 imgs
-            print('dataset shape:', self.x.shape)  # [1623, 20, 84, 84, 1]
+            print('data shape:', self.x.shape)  # [1623, 20, 84, 84, 1]
             temp = []  # Free memory
             # save all dataset into npy file.
-            np.save(os.path.join(root, 'omni.npy'), self.x)
+            np.save(os.path.join(root, 'omniglot.npy'), self.x)
+            print('write into omniglot.npy.')
         else:
             # if data.npy exists, just load it.
-            self.x = np.load(os.path.join(root, 'omni.npy'))
+            self.x = np.load(os.path.join(root, 'omniglot.npy'))
+            print('load from omniglot.npy.')
 
-        self.x = self.x / 255
-        # self.x: [1623, shuffled, 20 imgs, 84, 84, 1]
-        np.random.shuffle(self.x)  # shuffle on the first dim = 1623 cls
-
+        # [1623, 20, 84, 84, 1]
+        # TODO: can not shuffle here, we must keep training and test set distinct!
         self.x_train, self.x_test = self.x[:1200], self.x[1200:]
-        self.normalization()
+
+        # self.normalization()
 
         self.batchsz = batchsz
         self.n_cls = self.x.shape[0]  # 1623
         self.n_way = n_way  # n way
         self.k_shot = k_shot  # k shot
         self.k_query = k_query  # k query
+        assert (k_shot + k_query) <=20
 
         # save pointer of current read batch in total cache
         self.indexes = {"train": 0, "test": 0}
         self.datasets = {"train": self.x_train, "test": self.x_test}  # original data cached
-        print("DB: train_shape", self.x_train.shape, "test_shape", self.x_test.shape)
+        print("DB: train", self.x_train.shape, "test", self.x_test.shape)
 
         self.datasets_cache = {"train": self.load_data_cache(self.datasets["train"]),  # current epoch data cached
                                "test": self.load_data_cache(self.datasets["test"])}
@@ -99,11 +107,11 @@ class OmniglotNShot():
         # print('preload next 50 caches of batchsz of batch.')
         for sample in range(100):  # num of episodes
             # (batch, setsz, imgs)
-            support_x = np.zeros((self.batchsz, setsz, self.resize, self.resize, 1))
+            support_x = np.zeros((self.batchsz, setsz, 1, self.resize, self.resize))
             # (batch, setsz)
             support_y = np.zeros((self.batchsz, setsz), dtype=np.int)
             # (batch, querysz, imgs)
-            query_x = np.zeros((self.batchsz, querysz, self.resize, self.resize, 1))
+            query_x = np.zeros((self.batchsz, querysz, 1, self.resize, self.resize))
             # (batch, querysz)
             query_y = np.zeros((self.batchsz, querysz), dtype=np.int)
 
@@ -112,6 +120,7 @@ class OmniglotNShot():
                 np.random.shuffle(shuffle_idx)  # [2,4,1,0,3]
                 shuffle_idx_test = np.arange(self.n_way)  # [0,1,2,3,4]
                 np.random.shuffle(shuffle_idx_test)  # [2,0,1,4,3]
+                # no duplicate class
                 selected_cls = np.random.choice(data_pack.shape[0], self.n_way, False)
 
                 for j, cur_class in enumerate(selected_cls):  # for each selected cls
@@ -134,10 +143,10 @@ class OmniglotNShot():
             data_cache.append([support_x, support_y, query_x, query_y])
         return data_cache
 
-    def __get_batch(self, mode):
+    def next(self, mode):
         """
         Gets next batch from the dataset with name.
-        :param dataset_name: The name of the dataset (one of "train", "val", "test")
+        :param mode: The name of the splitting (one of "train", "val", "test")
         :return:
         """
         # update cache if indexes is larger cached num
@@ -150,81 +159,38 @@ class OmniglotNShot():
 
         return next_batch
 
-    def get_batch(self, mode):
 
-        """
-        Get next batch
-        :return: Next batch
-        """
-        x_support_set, y_support_set, x_target, y_target = self.__get_batch(mode)
 
-        k = int(np.random.uniform(low=0, high=4))  # 0 - 3
-        # Iterate over the sequence. Extract batches.
-
-        if mode == 'train':
-            for i in np.arange(x_support_set.shape[0]):
-                # batchsz, setsz, c, h, w
-                x_support_set[i, :, :, :, :] = self.__rotate_batch(x_support_set[i, :, :, :, :], k)
-
-            # Rotate all the batch of the target images
-            for i in np.arange(x_target.shape[0]):
-                x_target[i, :, :, :, :] = self.__rotate_batch(x_target[i, :, :, :, :], k)
-
-        return x_support_set, y_support_set, x_target, y_target
-
-    def __rotate_batch(self, batch_images, k):
-        """
-        Rotates a whole image batch
-        :param batch_images: A batch of images
-        :param k: integer degree of rotation counter-clockwise
-        :return: The rotated batch of images
-        """
-        batch_size = len(batch_images)
-        for i in np.arange(batch_size):
-            batch_images[i] = np.rot90(batch_images[i], k)
-        return batch_images
 
 
 if __name__ == '__main__':
-    # the following episode is to view one set of images via tensorboard.
-    from torchvision.utils import make_grid
-    from matplotlib import pyplot as plt
-    from tensorboardX import SummaryWriter
-    import time
-    import torch
 
-    plt.ion()
+    import  time
+    import  torch
+    import  visdom
 
-    tb = SummaryWriter('runs', 'mini-imagenet')
-    db = OmniglotNShot('dataset', batchsz=20, n_way=5, k_shot=5, k_query=2)
+    # plt.ion()
+    viz = visdom.Visdom(env='omniglot_view')
 
-    set_ = db.get_batch('train')
-    while set_ != None:
-        # support_x: [k_shot*n_way, 3, 84, 84]
-        support_x, support_y, query_x, query_y = set_
-        print(support_y[0])
-        print(query_y[0])
+    db = OmniglotNShot('db/omniglot', batchsz=20, n_way=5, k_shot=5, k_query=15, imgsz=84)
+
+    for i in range(1000):
+        x_spt, y_spt, x_qry, y_qry = db.next('train')
+
+
         # [b, setsz, h, w, c] => [b, setsz, c, w, h] => [b, setsz, 3c, w, h]
-        support_x = torch.from_numpy(support_x).float().transpose(2, 4).repeat(1, 1, 3, 1, 1)
-        query_x = torch.from_numpy(query_x).float().transpose(2, 4).repeat(1, 1, 3, 1, 1)
-        support_y = torch.from_numpy(support_y).float()  # [batch, setsz, 1]
-        query_y = torch.from_numpy(query_y).float()
-        batchsz, setsz, c, h, w = support_x.size()
+        x_spt = torch.from_numpy(x_spt)
+        x_qry = torch.from_numpy(x_qry)
+        y_spt = torch.from_numpy(y_spt)
+        y_qry = torch.from_numpy(y_qry)
+        batchsz, setsz, c, h, w = x_spt.size()
 
-        support_x = make_grid(support_x[0], nrow=5)
-        query_x = make_grid(query_x[0], nrow=2)
 
-        plt.figure('support x')
-        plt.imshow(support_x.transpose(2, 0).transpose(1, 0).numpy())
-        plt.pause(0.5)
-        plt.figure('query x')
-        plt.imshow(query_x.transpose(2, 0).transpose(1, 0).numpy())
-        plt.pause(0.5)
+        viz.images(x_spt[0], nrow=5, win='x_spt', opts=dict(title='x_spt'))
+        viz.images(x_qry[0], nrow=15, win='x_qry', opts=dict(title='x_qry'))
+        viz.text(str(y_spt[0]), win='y_spt', opts=dict(title='y_spt'))
+        viz.text(str(y_qry[0]), win='y_qry', opts=dict(title='y_qry'))
 
-        tb.add_image('support_x', support_x)
-        tb.add_image('query_x', query_x)
 
-        set_ = db.get_batch('train')
         time.sleep(10)
 
-    tb.close()

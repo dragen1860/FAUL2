@@ -10484,3 +10484,131 @@ Traceback (most recent call last):
 OSError: [Errno 98] Address already in use
 Downloading scripts. It might take a while.
 It's Alive!
+INFO:tornado.access:304 GET / (127.0.0.1) 1.83ms
+INFO:tornado.access:304 GET /static/css/bootstrap.min.css?v=ec3bb52a00e176a7181d454dffaea219 (127.0.0.1) 0.74ms
+INFO:tornado.access:304 GET /static/js/jquery.min.js?v=e071abda8fe61194711cfc2ab99fe104 (127.0.0.1) 0.77ms
+INFO:tornado.access:304 GET /static/css/react-grid-layout-styles.css?v=7dc8934d2f9ac5303b8f0bb1148152a0 (127.0.0.1) 0.82ms
+INFO:tornado.access:304 GET /static/css/react-resizable-styles.css?v=9f91a8dbf4d8f7ef1399e625660405f4 (127.0.0.1) 0.73ms
+INFO:tornado.access:304 GET /static/js/react-react.min.js?v=bca103da5b5404d93783ccf73e0e9d1e (127.0.0.1) 0.77ms
+INFO:tornado.access:304 GET /static/js/react-dom.min.js?v=950495cc51ccb90612cf0fe0bb44f8f3 (127.0.0.1) 0.73ms
+INFO:tornado.access:304 GET /static/js/bootstrap.min.js?v=5869c96cc8f19086aee625d670d741f9 (127.0.0.1) 0.58ms
+INFO:tornado.access:304 GET /static/fonts/layout_bin_packer?v=6c46683ed70fbb1443caf3531243836d (127.0.0.1) 0.54ms
+INFO:tornado.access:304 GET /static/js/plotly-plotly.min.js?v=5eebb6248759fd312458f9403f534c4a (127.0.0.1) 0.82ms
+INFO:tornado.access:304 GET /static/js/main.js?v=4e65be2e6c8d7a6c50eed224c9ca42ed (127.0.0.1) 0.73ms
+INFO:tornado.access:304 GET /static/css/style.css?v=f1b2f4d2442b8263f30058d8085c1ab3 (127.0.0.1) 0.80ms
+INFO:tornado.access:200 GET /static/js/mathjax-MathJax.js?v=49565b9ce89c64da075a5a39969b366e (127.0.0.1) 0.88ms
+INFO:tornado.access:101 GET /socket (127.0.0.1) 0.60ms
+INFO:root:Opened new socket from ip: 127.0.0.1
+INFO:tornado.access:200 POST /env/meta-fc-ae (127.0.0.1) 2.89ms
+INFO:tornado.access:200 POST /env/meta-fc-ae (127.0.0.1) 3.47ms
+INFO:tornado.access:200 GET /favicon.png (127.0.0.1) 2.26ms
+INFO:tornado.access:200 GET /extensions/MathMenu.js?V=2.7.1 (127.0.0.1) 3.19ms
+INFO:tornado.access:200 GET /extensions/MathZoom.js?V=2.7.1 (127.0.0.1) 7.01ms
+INFO:tornado.access:200 POST /env/omniglot_view (127.0.0.1) 0.65ms
+INFO:tornado.access:101 GET /vis_socket (127.0.0.1) 0.35ms
+INFO:root:Opened visdom socket from ip: 127.0.0.1
+INFO:tornado.access:200 POST /env/omniglot_view (127.0.0.1) 41.55ms
+INFO:tornado.access:101 GET /vis_socket (127.0.0.1) 9.61ms
+INFO:root:Opened visdom socket from ip: 127.0.0.1
+INFO:tornado.access:200 POST /events (127.0.0.1) 13.10ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 3.28ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 1.37ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.42ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 1.39ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.47ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.67ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.47ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.52ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.49ms
+INFO:tornado.access:200 POST /env/omniglot_view (127.0.0.1) 0.78ms
+INFO:tornado.access:101 GET /vis_socket (127.0.0.1) 1.47ms
+INFO:root:Opened visdom socket from ip: 127.0.0.1
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.69ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.46ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.46ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.48ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.52ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.44ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.52ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.48ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.52ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.47ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.48ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.59ms
+INFO:tornado.access:200 POST /env/omniglot_view (127.0.0.1) 2.55ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.91ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.65ms
+INFO:tornado.access:200 POST /env/omniglot_view (127.0.0.1) 0.86ms
+INFO:tornado.access:101 GET /vis_socket (127.0.0.1) 0.35ms
+INFO:root:Opened visdom socket from ip: 127.0.0.1
+INFO:tornado.access:200 POST /env/omniglot_view (127.0.0.1) 28.27ms
+INFO:tornado.access:101 GET /vis_socket (127.0.0.1) 7.43ms
+INFO:root:Opened visdom socket from ip: 127.0.0.1
+INFO:tornado.access:200 POST /env/omniglot_view (127.0.0.1) 0.53ms
+INFO:tornado.access:101 GET /vis_socket (127.0.0.1) 0.87ms
+INFO:root:Opened visdom socket from ip: 127.0.0.1
+INFO:tornado.access:200 POST /env/omniglot_view (127.0.0.1) 0.35ms
+INFO:tornado.access:101 GET /vis_socket (127.0.0.1) 0.64ms
+INFO:root:Opened visdom socket from ip: 127.0.0.1
+INFO:tornado.access:200 POST /env/omniglot_view (127.0.0.1) 37.55ms
+INFO:tornado.access:101 GET /vis_socket (127.0.0.1) 4.04ms
+INFO:root:Opened visdom socket from ip: 127.0.0.1
+INFO:tornado.access:200 POST /env/omniglot_view (127.0.0.1) 22.41ms
+INFO:tornado.access:101 GET /vis_socket (127.0.0.1) 16.63ms
+INFO:root:Opened visdom socket from ip: 127.0.0.1
+INFO:tornado.access:200 POST /events (127.0.0.1) 386.79ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 2.94ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.93ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 22.90ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.55ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 8.34ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.56ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.46ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.57ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.57ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.48ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 224.69ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.54ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.57ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.48ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.44ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.55ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.66ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.50ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.70ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.53ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 1.10ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 9.11ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.43ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.53ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.56ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.53ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.72ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.54ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.79ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.53ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.65ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.56ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 1.38ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.57ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.85ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.60ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.57ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.50ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.69ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.52ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.61ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.52ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.50ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.52ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.70ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.66ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.47ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.54ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 1.94ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.79ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.49ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.51ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.63ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 0.55ms
+INFO:tornado.access:200 POST /events (127.0.0.1) 1.28ms
