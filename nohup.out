@@ -10612,3 +10612,21 @@ INFO:tornado.access:200 POST /events (127.0.0.1) 0.51ms
 INFO:tornado.access:200 POST /events (127.0.0.1) 0.63ms
 INFO:tornado.access:200 POST /events (127.0.0.1) 0.55ms
 INFO:tornado.access:200 POST /events (127.0.0.1) 1.28ms
+INFO:tornado.access:200 POST /env/omniglot_view (127.0.0.1) 13.52ms
+INFO:tornado.access:101 GET /vis_socket (127.0.0.1) 4.14ms
+INFO:root:Opened visdom socket from ip: 127.0.0.1
+INFO:root:from web client: {"cmd":"close","data":"support_x","eid":"omniglot_view"}
+INFO:root:closing window support_x
+INFO:root:from web client: {"cmd":"close","data":"query_x","eid":"omniglot_view"}
+INFO:root:closing window query_x
+INFO:root:from web client: {"cmd":"close","data":"x_spt","eid":"omniglot_view"}
+INFO:root:closing window x_spt
+INFO:root:from web client: {"cmd":"close","data":"x_qry","eid":"omniglot_view"}
+INFO:root:closing window x_qry
+INFO:root:from web client: {"cmd":"close","data":"y_spt","eid":"omniglot_view"}
+INFO:root:closing window y_spt
+INFO:root:from web client: {"cmd":"close","data":"y_qry","eid":"omniglot_view"}
+INFO:root:closing window y_qry
+INFO:tornado.access:200 POST /env/omniglot_view (127.0.0.1) 0.34ms
+INFO:tornado.access:101 GET /vis_socket (127.0.0.1) 0.32ms
+INFO:root:Opened visdom socket from ip: 127.0.0.1

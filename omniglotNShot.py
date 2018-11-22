@@ -105,42 +105,48 @@ class OmniglotNShot:
         data_cache = []
 
         # print('preload next 50 caches of batchsz of batch.')
-        for sample in range(100):  # num of episodes
-            # (batch, setsz, imgs)
-            support_x = np.zeros((self.batchsz, setsz, 1, self.resize, self.resize))
-            # (batch, setsz)
-            support_y = np.zeros((self.batchsz, setsz), dtype=np.int)
-            # (batch, querysz, imgs)
-            query_x = np.zeros((self.batchsz, querysz, 1, self.resize, self.resize))
-            # (batch, querysz)
-            query_y = np.zeros((self.batchsz, querysz), dtype=np.int)
+        for sample in range(500):  # num of episodes
 
+            x_spts, y_spts, x_qrys, y_qrys = [], [], [], []
             for i in range(self.batchsz):  # one batch means one set
-                shuffle_idx = np.arange(self.n_way)  # [0,1,2,3,4]
-                np.random.shuffle(shuffle_idx)  # [2,4,1,0,3]
-                shuffle_idx_test = np.arange(self.n_way)  # [0,1,2,3,4]
-                np.random.shuffle(shuffle_idx_test)  # [2,0,1,4,3]
-                # no duplicate class
+
+                x_spt, y_spt, x_qry, y_qry = [], [], [], []
                 selected_cls = np.random.choice(data_pack.shape[0], self.n_way, False)
 
-                for j, cur_class in enumerate(selected_cls):  # for each selected cls
-                    # Count number of times this class is inside the meta-test
-                    # [img1, img2 ,,,  = k_shot + k_query ]
-                    selected_imgs = np.random.choice(data_pack.shape[1], self.k_shot + self.k_query, False)
+                for j, cur_class in enumerate(selected_cls):
 
-                    # meta-training, select the first k_shot imgs for each class as support imgs
-                    for offset, img in enumerate(selected_imgs[:self.k_shot]):
-                        # i: batch idx
-                        # cur_class: cls in n_way
-                        support_x[i, shuffle_idx[j] * self.k_shot + offset, ...] = data_pack[cur_class][img]
-                        support_y[i, shuffle_idx[j] * self.k_shot + offset] = j  # cur_class = global indexing
+                    selected_img = np.random.choice(20, self.k_shot + self.k_query, False)
 
-                    # meta-test, treat following k_query imgs as query imgs
-                    for offset, img in enumerate(selected_imgs[self.k_shot:]):
-                        query_x[i, shuffle_idx_test[j] * self.k_query + offset, ...] = data_pack[cur_class][img]
-                        query_y[i, shuffle_idx_test[j] * self.k_query + offset] = j  # cur_class = global indexing
+                    # meta-training and meta-test
+                    x_spt.append(data_pack[cur_class][selected_img[:self.k_shot]])
+                    x_qry.append(data_pack[cur_class][selected_img[self.k_shot:]])
+                    y_spt.append([j for _ in range(self.k_shot)])
+                    y_qry.append([j for _ in range(self.k_query)])
 
-            data_cache.append([support_x, support_y, query_x, query_y])
+                # shuffle inside a batch
+                perm = np.random.permutation(self.n_way * self.k_shot)
+                x_spt = np.array(x_spt).reshape(self.n_way * self.k_shot, 1, self.resize, self.resize)[perm]
+                y_spt = np.array(y_spt).reshape(self.n_way * self.k_shot)[perm]
+                perm = np.random.permutation(self.n_way * self.k_query)
+                x_qry = np.array(x_qry).reshape(self.n_way * self.k_query, 1, self.resize, self.resize)[perm]
+                y_qry = np.array(y_qry).reshape(self.n_way * self.k_query)[perm]
+
+                # append [sptsz, 1, 84, 84] => [b, setsz, 1, 84, 84]
+                x_spts.append(x_spt)
+                y_spts.append(y_spt)
+                x_qrys.append(x_qry)
+                y_qrys.append(y_qry)
+
+
+            # [b, setsz, 1, 84, 84]
+            x_spts = np.array(x_spts).reshape(self.batchsz, setsz, 1, self.resize, self.resize)
+            y_spts = np.array(y_spts).reshape(self.batchsz, setsz)
+            # [b, qrysz, 1, 84, 84]
+            x_qrys = np.array(x_qrys).reshape(self.batchsz, querysz, 1, self.resize, self.resize)
+            y_qrys = np.array(y_qrys).reshape(self.batchsz, querysz)
+
+            data_cache.append([x_spts, y_spts, x_qrys, y_qrys])
+
         return data_cache
 
     def next(self, mode):
