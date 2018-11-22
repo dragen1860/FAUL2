@@ -285,7 +285,7 @@ if __name__ == '__main__':
     parser.add_argument('--finetuning_steps', type=int, default=5, help='finetuning steps')
     parser.add_argument('--classify_lr', type=float, default=0.05, help='classifier lr')
     parser.add_argument('--classify_steps', type=int, default=50, help='classifier update steps')
-    parser.add_argument('--n_way', type=int, default=5)
+    parser.add_argument('--n_way', type=int, default=4)
     parser.add_argument('--k_spt', type=int, default=1)
     parser.add_argument('--k_qry', type=int, default=20) # only for train-qry set
     parser.add_argument('--k_qry_test', type=int, default=200, help='in test phase')

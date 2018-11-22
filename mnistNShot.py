@@ -77,9 +77,9 @@ class MnistNShot(Dataset):
         # print('mnist class num:', num_len)
 
         if training:
-            self.mode_numbers = np.array([0, 1, 2, 3, 4])
+            self.mode_numbers = np.array([0, 1, 2, 3, 4, 5])
         else:
-            self.mode_numbers = np.array([5, 6, 7, 8, 9])
+            self.mode_numbers = np.array([6, 7, 8, 9])
 
 
         # sample specific categories
