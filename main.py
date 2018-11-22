@@ -170,11 +170,10 @@ def main(args):
 
     vis = visdom.Visdom(env=args.exp)
     visualh = VisualH(vis)
-    vis.line([[0,0,0]], [0], win='train_loss', opts=dict(
-                                                    title='train_loss',
+    vis.line([[0,0,0]], [0], win=args.exp+'train_loss', opts=dict(
+                                                    title=args.exp+'train_qloss',
                                                     legend=['loss', '-lklh', 'kld'],
-                                                    xlabel='global_step')
-             )
+                                                    xlabel='global_step'))
 
     # for test_progress
     vis.line([[0, 0]], [0], win=args.exp+'acc_on_qry01', opts=dict(title=args.exp+'acc_on_qry01',
@@ -210,7 +209,7 @@ def main(args):
                     if args.is_vae:
                         # print(losses_q, likelihoods_q, klds_q)
                         vis.line([[losses_q[-1].item(), -likelihoods_q[-1].item(), klds_q[-1].item()]],
-                                 [global_step], win='train_loss', update='append')
+                                 [global_step], win=args.exp+'train_loss', update='append')
                         print(epoch, global_step)
                         print('loss_q:', torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
                         print('lkhd_q:', torch.stack(likelihoods_q).detach().cpu().numpy().astype(np.float16))
@@ -218,7 +217,7 @@ def main(args):
                     else:
                         # print(losses_q, likelihoods_q, klds_q)
                         vis.line([[losses_q[-1].item(), 0, 0]],
-                                 [global_step], win='train_loss', update='append')
+                                 [global_step], win=args.exp+'train_loss', update='append')
                         print(epoch, global_step, torch.stack(losses_q).detach().cpu().numpy().astype(np.float16))
 
 
@@ -243,11 +242,14 @@ def main(args):
                         vis.line([[loss_optim.item(), -likelihood.item(), kld.item()]],
                                  [global_step], win='train_loss', update='append')
 
-                    if args.h_dim == 2:
-                        # can not use net.decoder directly!!!
-                        train_manifold = net.forward_decoder(h_manifold)
-                        vis.images(train_manifold, win='train_manifold', nrow=args.h_nrow,
-                                                opts=dict(title='train_manifold:%d' % epoch))
+                    # if args.h_dim == 2:
+                    #     # can not use net.decoder directly!!!
+                    #     train_manifold = net.forward_decoder(h_manifold)
+                    #     vis.images(train_manifold, win='train_manifold', nrow=args.h_nrow,
+                    #                             opts=dict(title='train_manifold:%d' % epoch))
+
+
+
 
         if epoch % 2 == 0:
             test.test_progress(args, net, device, vis, global_step)
@@ -281,7 +283,7 @@ if __name__ == '__main__':
     parser.add_argument('--meta_lr', type=float, default=1e-3, help='meta lr or general lr for normal ae/vae')
     parser.add_argument('--update_num', type=int, default=5, help='update num')
     parser.add_argument('--update_lr', type=float, default=0.2, help='update lr')
-    parser.add_argument('--finetuning_lr', type=float, default=0.2, help='finetuning lr, similar with update lr')
+    parser.add_argument('--finetuning_lr', type=float, default=0.1, help='finetuning lr, similar with update lr')
     parser.add_argument('--finetuning_steps', type=int, default=5, help='finetuning steps')
     parser.add_argument('--classify_lr', type=float, default=0.05, help='classifier lr')
     parser.add_argument('--classify_steps', type=int, default=50, help='classifier update steps')

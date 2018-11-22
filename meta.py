@@ -161,9 +161,11 @@ class MetaAE(nn.Module):
         """
 
         total_norm = 0
+        counter = 0
         for g in grad:
             param_norm = g.data.norm(2)
             total_norm += param_norm.item() ** 2
+            counter += 1
         total_norm = total_norm ** (1. / 2)
 
         clip_coef = max_norm / (total_norm + 1e-6)
@@ -171,7 +173,7 @@ class MetaAE(nn.Module):
             for g in grad:
                 g.data.mul_(clip_coef)
 
-        return total_norm
+        return total_norm/counter
 
     def forward(self, x_spt, y_spt, x_qry, y_qry):
         """
@@ -253,10 +255,14 @@ class MetaAE(nn.Module):
                 self.learner.zero_grad(fast_weights)
                 # 2. compute grad on theta_pi
                 grad = torch.autograd.grad(loss, fast_weights)
-                self.clip_grad_by_norm_(grad, 10)
+                total_norm = self.clip_grad_by_norm_(grad, 10)
 
-                # 3. theta_pi = theta_pi - train_lr * grad
-                fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, fast_weights)))
+                if total_norm > 10:
+                    # 3. theta_pi = theta_pi - train_lr * grad
+                    fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, fast_weights)))
+                else:
+                    pass
+                    #print('skip gradient.', total_norm)
 
                 pred_q, loss_q, likelihood_q, kld_q = self.learner(x_qry[i], fast_weights)
                 update_statistic(loss, likelihood, kld, loss_q, likelihood_q, kld_q, k + 1)
