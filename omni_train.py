@@ -289,7 +289,7 @@ if __name__ == '__main__':
 
 
     parser.add_argument('--fc_hidden', type=int, default=128, help='784=>fc_hidden=>')
-    parser.add_argument('--conv_ch', type=int, default=16, help='conv channels units')
+    parser.add_argument('--conv_ch', type=int, default=64, help='conv channels units')
 
     parser.add_argument('--h_range', type=float, default=2.0,
                         help='Range for uniformly distributed latent vector')

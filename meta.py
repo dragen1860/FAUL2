@@ -41,10 +41,10 @@ class MetaAE(nn.Module):
                 raise NotImplementedError
             else:
                 config = [
-                    ('conv2d', [32, 1, 5, 5, 5, 0]),  # the first
+                    ('conv2d', [args.conv_ch, 1, 5, 5, 5, 0]),  # the first
                     ('relu', [True]),
                     ('max_pool2d', [2, 2, 0]),
-                    ('conv2d', [32, 32, 3, 3, 3, 0]),  #
+                    ('conv2d', [args.conv_ch, args.conv_ch, 3, 3, 3, 0]),  #
                     ('relu', [True]),
                     ('max_pool2d', [2, 2, 0]),
                     ('flatten', []),
@@ -52,14 +52,14 @@ class MetaAE(nn.Module):
                     ('hidden', []),  # hidden variable
 
                     # [ch_out, ch_in]
-                    ('reshape', [32, 1, 1]),
-                    ('convt2d', [32, 32, 3, 3, 1, 0]),  # defactor1
+                    ('reshape', [args.conv_ch, 1, 1]),
+                    ('convt2d', [args.conv_ch, args.conv_ch, 3, 3, 1, 0]),  # defactor1
                     ('relu', [True]),
-                    ('convt2d', [32, 32, 3, 3, 2, 0]),
+                    ('convt2d', [args.conv_ch, args.conv_ch, 3, 3, 2, 0]),
                     ('relu', [True]),
-                    ('convt2d', [32, 32, 3, 3, 3, 0]),
+                    ('convt2d', [args.conv_ch, args.conv_ch, 3, 3, 3, 0]),
                     ('relu', [True]),
-                    ('convt2d', [32, 1, 4, 4, 3, 0]),
+                    ('convt2d', [args.conv_ch, 1, 4, 4, 3, 0]),
                     ('use_logits', [])
                 ]
         else: # fully-connected

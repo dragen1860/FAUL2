@@ -66,10 +66,10 @@ class AE(nn.Module):
                 raise NotImplementedError
             else:
                 self.encoder = nn.Sequential(
-                    nn.Conv2d(1, 32, kernel_size=5, stride=5, padding=0),
+                    nn.Conv2d(1, args.conv_ch, kernel_size=5, stride=5, padding=0),
                     nn.ReLU(inplace=True),
                     nn.MaxPool2d(kernel_size=2, stride=2),
-                    nn.Conv2d(32, 32, kernel_size=3, stride=3, padding=0),
+                    nn.Conv2d(args.conv_ch, args.conv_ch, kernel_size=3, stride=3, padding=0),
                     nn.ReLU(inplace=True),
                     nn.MaxPool2d(kernel_size=2, stride=2),
                     Flatten(), # [b, 32, 1, 1]
@@ -77,14 +77,14 @@ class AE(nn.Module):
                 )
 
             self.decoder = nn.Sequential(
-                Reshape(32, 1, 1),
-                nn.ConvTranspose2d(32, 32, kernel_size=3, stride=1, padding=0),
+                Reshape(args.conv_ch, 1, 1),
+                nn.ConvTranspose2d(args.conv_ch, args.conv_ch, kernel_size=3, stride=1, padding=0),
                 nn.ReLU(inplace=True),
-                nn.ConvTranspose2d(32, 32, kernel_size=3, stride=2, padding=0),
+                nn.ConvTranspose2d(args.conv_ch, args.conv_ch, kernel_size=3, stride=2, padding=0),
                 nn.ReLU(inplace=True),
-                nn.ConvTranspose2d(32, 32, kernel_size=3, stride=3, padding=0),
+                nn.ConvTranspose2d(args.conv_ch, args.conv_ch, kernel_size=3, stride=3, padding=0),
                 nn.ReLU(inplace=True),
-                nn.ConvTranspose2d(32, 1, kernel_size=4, stride=3, padding=0),
+                nn.ConvTranspose2d(args.conv_ch, 1, kernel_size=4, stride=3, padding=0),
 
             )
 
