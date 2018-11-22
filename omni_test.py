@@ -195,7 +195,8 @@ def test_progress(args, net, device, viz=None, global_step=0):
         h_spt0, h_spt1, h_qry0, h_qry1, _, new_net = net.finetuning(spt_x, spt_y, qry_x, qry_y,
                                                                             args.finetuning_steps, None)
 
-        # visualh.update(h_spt0, h_spt1, h_qry0, h_qry1, spt_y, qry_y, batchidx)
+        if batchidx == 0:
+            visualh.update(h_spt0, h_spt1, h_qry0, h_qry1, spt_y, qry_y, global_step)
 
 
         # we will use the acquired representation to cluster.
