@@ -172,7 +172,7 @@ def test_progress(args, net, device, viz=None, global_step=0):
         os.makedirs(output_dir)
 
     # clustering, visualization and classification
-    db_train = OmniglotNShot('db/omniglot', batchsz=1, n_way=args.n_way, k_shot=args.k_spt,
+    db_test = OmniglotNShot('db/omniglot', batchsz=1, n_way=args.n_way, k_shot=args.k_spt,
                              k_query=args.k_qry, imgsz=args.imgsz)
 
 
@@ -182,7 +182,7 @@ def test_progress(args, net, device, viz=None, global_step=0):
     acc0, acc1 = [], []
 
     for batchidx in range(args.test_episode_num):
-        spt_x, spt_y, qry_x, qry_y = db_train.next('test')
+        spt_x, spt_y, qry_x, qry_y = db_test.next('test')
         spt_x, spt_y, qry_x, qry_y = torch.from_numpy(spt_x).to(device), torch.from_numpy(spt_y).to(device), \
                                      torch.from_numpy(qry_x).to(device), torch.from_numpy(qry_y).to(device)
         assert spt_x.size(0) == 1
@@ -242,7 +242,8 @@ def test_progress(args, net, device, viz=None, global_step=0):
             viz.images(qry_x_hat1, nrow=8, win=exp+'qry_x_hat1', opts=dict(title=exp+'qry_x_hat1'))
 
 
-        break
+        if batchidx > 3:
+            break
 
 
     h_qry0_ami, h_qry0_ars, h_qry1_ami, h_qry1_ars = h_qry0_ami / (batchidx + 1), h_qry0_ars / (batchidx + 1), \

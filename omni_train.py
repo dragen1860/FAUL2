@@ -280,7 +280,7 @@ if __name__ == '__main__':
     parser.add_argument('--imgc', type=int, default=1)
     parser.add_argument('--imgsz', type=int, default=64)
     parser.add_argument('--h_dim', type=int, default=20, help='h dim for vae. you should specify net manually for ae')
-    parser.add_argument('--train_episode_num', type=int, default=500000)
+    parser.add_argument('--train_episode_num', type=int, default=5000000)
     parser.add_argument('--test_episode_num', type=int, default=100)
     parser.add_argument('--ckpt_dir', type=str, default='ckpt', help='checkpoint save directory')
     parser.add_argument('--test_dir', type=str, default='results', help='directory to save test results images and figures')
