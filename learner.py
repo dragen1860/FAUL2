@@ -1,7 +1,7 @@
 import  torch
 from    torch import nn
 from    torch.nn import functional as F
-
+import  numpy as np
 
 
 
@@ -95,10 +95,10 @@ class AELearner(nn.Module):
 
         if self.use_logits:
             # target: [b, 1, 28, 28]
-            self.criteon = nn.BCEWithLogitsLoss(reduction='sum')
+            self.criteon = nn.BCEWithLogitsLoss(reduction='elementwise_mean')
             # self.criteon = nn.MSELoss(reduction='sum')
         else:
-            self.criteon = nn.BCELoss(reduction='sum')
+            self.criteon = nn.BCELoss(reduction='elementwise_mean')
             # self.criteon = nn.MSELoss(reduction='elementwise_mean')
 
 
@@ -244,7 +244,7 @@ class AELearner(nn.Module):
             # assert not torch.isnan(x).any()
 
             # likelihood is the negative loss.
-            likelihood = -self.criteon(x, input) / input.size(0)
+            likelihood = -self.criteon(x, input)
 
             # see Appendix B from VAE paper:
             # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
@@ -254,7 +254,7 @@ class AELearner(nn.Module):
                                 torch.pow(q_mu, 2) +
                                 torch.pow(q_sigma, 2) -
                                 torch.log(1e-8 + torch.pow(q_sigma, 2)) - 1
-                            ) / input.size(0)
+                            ) / np.prod(input.shape)
             kld = self.beta * kld
             elbo = likelihood - kld
             loss = - elbo
@@ -265,7 +265,7 @@ class AELearner(nn.Module):
             return x, loss, likelihood, kld
 
         else:
-            loss = self.criteon(x, input) / input.size(0)
+            loss = self.criteon(x, input)
             # print(loss, input.shape)
 
             if self.use_logits:
