@@ -60,16 +60,16 @@ def update_args(args):
         args.is_vae = False
         args.is_meta = True
         args.use_conv = False
-        # args.finetuning_lr = 0.1
-        # args.finetuning_steps = 15
+        args.finetuning_lr = 0.1
+        args.finetuning_steps = 15
 
 
     elif exp == 'meta-fc-vae':
         args.is_vae = True
         args.is_meta = True
         args.use_conv = False
-        # args.finetuning_lr = 0.1
-        # args.finetuning_steps = 15
+        args.finetuning_lr = 0.1
+        args.finetuning_steps = 15
 
 
 

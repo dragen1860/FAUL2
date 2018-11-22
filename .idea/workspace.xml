@@ -54,7 +54,7 @@
         <entry file="file://$PROJECT_DIR$/normal.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="477">
-              <caret line="108" column="30" lean-forward="true" selection-start-line="108" selection-start-column="30" selection-end-line="108" selection-end-column="30" />
+              <caret line="108" column="30" selection-start-line="108" selection-start-column="30" selection-end-line="108" selection-end-column="30" />
               <folding>
                 <element signature="e#0#13#0" expanded="true" />
                 <marker date="1542801412871" expanded="true" signature="275:321" ph="..." />
@@ -68,7 +68,7 @@
         <entry file="file://$PROJECT_DIR$/mnistNShot.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="660">
-              <caret line="144" column="31" lean-forward="true" selection-start-line="144" selection-start-column="31" selection-end-line="144" selection-end-column="31" />
+              <caret line="144" column="31" selection-start-line="144" selection-start-column="31" selection-end-line="144" selection-end-column="31" />
               <folding>
                 <element signature="e#0#18#0" expanded="true" />
               </folding>
@@ -79,11 +79,11 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="618">
-              <caret line="293" column="55" selection-start-line="293" selection-start-column="55" selection-end-line="293" selection-end-column="55" />
+            <state relative-caret-position="-793">
+              <caret line="65" selection-start-line="65" selection-end-line="65" />
               <folding>
                 <element signature="e#0#16#0" expanded="true" />
-                <marker date="1542805595464" expanded="true" signature="2577:2580" ph="..." />
+                <marker date="1542806116461" expanded="true" signature="2569:2572" ph="..." />
               </folding>
             </state>
           </provider>
@@ -93,7 +93,7 @@
         <entry file="file://$PROJECT_DIR$/test.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="266">
-              <caret line="229" lean-forward="true" selection-start-line="229" selection-end-line="229" />
+              <caret line="229" selection-start-line="229" selection-end-line="229" />
               <folding>
                 <element signature="e#0#10#0" expanded="true" />
               </folding>
@@ -105,7 +105,7 @@
         <entry file="file://$PROJECT_DIR$/meta.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="3497">
-              <caret line="437" column="3" lean-forward="true" selection-start-line="437" selection-start-column="3" selection-end-line="437" selection-end-column="3" />
+              <caret line="437" column="3" selection-start-line="437" selection-start-column="3" selection-end-line="437" selection-end-column="3" />
               <folding>
                 <element signature="e#0#13#0" expanded="true" />
                 <marker date="1542801349072" expanded="true" signature="5070:5178" ph="..." />
@@ -787,7 +787,7 @@
     <entry file="file://$PROJECT_DIR$/test.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="266">
-          <caret line="229" lean-forward="true" selection-start-line="229" selection-end-line="229" />
+          <caret line="229" selection-start-line="229" selection-end-line="229" />
           <folding>
             <element signature="e#0#10#0" expanded="true" />
           </folding>
@@ -797,7 +797,7 @@
     <entry file="file://$PROJECT_DIR$/mnistNShot.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="660">
-          <caret line="144" column="31" lean-forward="true" selection-start-line="144" selection-start-column="31" selection-end-line="144" selection-end-column="31" />
+          <caret line="144" column="31" selection-start-line="144" selection-start-column="31" selection-end-line="144" selection-end-column="31" />
           <folding>
             <element signature="e#0#18#0" expanded="true" />
           </folding>
@@ -807,7 +807,7 @@
     <entry file="file://$PROJECT_DIR$/meta.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="3497">
-          <caret line="437" column="3" lean-forward="true" selection-start-line="437" selection-start-column="3" selection-end-line="437" selection-end-column="3" />
+          <caret line="437" column="3" selection-start-line="437" selection-start-column="3" selection-end-line="437" selection-end-column="3" />
           <folding>
             <element signature="e#0#13#0" expanded="true" />
             <marker date="1542801349072" expanded="true" signature="5070:5178" ph="..." />
@@ -818,7 +818,7 @@
     <entry file="file://$PROJECT_DIR$/normal.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="477">
-          <caret line="108" column="30" lean-forward="true" selection-start-line="108" selection-start-column="30" selection-end-line="108" selection-end-column="30" />
+          <caret line="108" column="30" selection-start-line="108" selection-start-column="30" selection-end-line="108" selection-end-column="30" />
           <folding>
             <element signature="e#0#13#0" expanded="true" />
             <marker date="1542801412871" expanded="true" signature="275:321" ph="..." />
@@ -829,11 +829,11 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="618">
-          <caret line="293" column="55" selection-start-line="293" selection-start-column="55" selection-end-line="293" selection-end-column="55" />
+        <state relative-caret-position="-793">
+          <caret line="65" selection-start-line="65" selection-end-line="65" />
           <folding>
             <element signature="e#0#16#0" expanded="true" />
-            <marker date="1542805595464" expanded="true" signature="2577:2580" ph="..." />
+            <marker date="1542806116461" expanded="true" signature="2569:2572" ph="..." />
           </folding>
         </state>
       </provider>
