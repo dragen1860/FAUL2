@@ -15,6 +15,8 @@ from    omniglotNShot import OmniglotNShot
 from    visualization import VisualH
 import  omni_test as test
 
+
+
 def update_args(args):
 
     if args.exp is None:
@@ -34,18 +36,25 @@ def update_args(args):
         args.use_conv = True
         args.finetuning_lr = 0.01
         args.finetuning_steps = 15
-
     elif exp == 'meta-conv-vae':
         args.is_vae = True
         args.is_meta = True
         args.use_conv = True
         args.finetuning_lr = 0.01
         args.finetuning_steps = 15
-
     elif exp == 'normal-conv-ae':
         args.is_vae = False
         args.is_meta = False
         args.use_conv = True
+        args.finetuning_lr = 0.01
+        args.finetuning_steps = 15
+    elif exp == 'normal-conv-vae':
+        args.is_vae = True
+        args.is_meta = False
+        args.use_conv = True
+        args.finetuning_lr = 0.01
+        args.finetuning_steps = 15
+
 
 
     elif exp == 'meta-fc-ae':
@@ -228,16 +237,15 @@ def main(args):
                     vis.line([[loss_optim.item(), -likelihood.item(), kld.item()]],
                              [epoch], win='train_loss', update='append')
 
-                # if args.h_dim == 2:
-                #     # can not use net.decoder directly!!!
-                #     train_manifold = net.forward_decoder(h_manifold)
-                #     vis.images(train_manifold, win='train_manifold', nrow=args.h_nrow,
-                #                             opts=dict(title='train_manifold:%d' % epoch))
+
 
 
 
 
         if epoch % 3000 == 0:
+            # [qrysz, 1, 64, 64] => [qrysz, 1, 64, 64]
+            x_hat = net.forward_ae(qry_x[0])
+            vis.images(x_hat, nrow=args.k_qry, win='train_x_hat', opts=dict(title='train_x_hat'))
             test.test_progress(args, net, device, vis, epoch)
 
 
