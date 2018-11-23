@@ -13,9 +13,9 @@ class AELearner(nn.Module):
     def __init__(self, config, imgc, imgsz, is_vae, beta):
         """
 
-        :param config: network config file
-        :param imgc:
-        :param imgsz:
+        :param config: network config file, type:list of (string, list)
+        :param imgc: 1 or 3
+        :param imgsz:  28 or 64
         :param is_vae: auto-encoder or variational ae
         :param beta: beta for vae.
         """
@@ -25,10 +25,13 @@ class AELearner(nn.Module):
         self.config = config
         self.is_vae = is_vae
         self.beta = beta
+        # will be determined by config file.
         self.use_logits = False
 
         # this dict contains all tensors needed to be optimized
         self.vars = nn.ParameterList()
+        # running_mean and running_var
+        self.vars_bn = nn.ParameterList()
 
         for i, (name, param) in enumerate(self.config):
             if name is 'conv2d':
@@ -52,11 +55,25 @@ class AELearner(nn.Module):
             elif name is 'linear':
                 # [ch_out, ch_in]
                 w = nn.Parameter(torch.ones(*param))
-                # gain=1 according to cbfin's implementation
+                # gain=1 according to cbfinn's implementation
                 torch.nn.init.kaiming_normal_(w)
                 self.vars.append(w)
                 # [ch_out]
                 self.vars.append(nn.Parameter(torch.zeros(param[0])))
+
+            elif name is 'bn':
+                # [ch_out]
+                w = nn.Parameter(torch.ones(param[0]))
+                self.vars.append(w)
+                # [ch_out]
+                self.vars.append(nn.Parameter(torch.zeros(param[0])))
+
+                # must set requires_grad=False
+                running_mean = nn.Parameter(torch.zeros(param[0]), requires_grad=False)
+                running_var = nn.Parameter(torch.ones(param[0]), requires_grad=False)
+                self.vars_bn.extend([running_mean, running_var])
+
+
             elif name is 'usigma_layer':
                 assert self.is_vae
                 # w1 + b1 => mean
@@ -77,9 +94,10 @@ class AELearner(nn.Module):
             elif name is 'hidden':
                 # to separate the variable from encoder.
                 self.hidden_var_idx = len(self.vars)
+                self.hidden_var_bn_idx = len(self.vars_bn)
                 # to separate network config
                 self.hidden_config_idx = i
-                print('hidden_vars:', self.hidden_var_idx, 'hidden_config:', self.hidden_config_idx)
+                print('hidden_var_idx:', self.hidden_var_idx, 'hidden_var_bn_idx:', self.hidden_var_bn_idx)
 
             elif name is 'use_logits':
                 self.use_logits = True
@@ -102,13 +120,13 @@ class AELearner(nn.Module):
             # self.criteon = nn.MSELoss(reduction='elementwise_mean')
 
 
-        h = self.forward_encoder(torch.Tensor(2, imgc, imgsz, imgsz))
+        # TODO: can not use torch.Tensor since it will update running_mean and running_var to np.inf
+        h = self.forward_encoder(torch.randn(2, imgc, imgsz, imgsz))
         self.h_shape = h.shape[1:] # for printing network structure
         # return with x, loss, likelihood, kld
-        out, _, _, _ = self.forward(torch.Tensor(2, imgc, imgsz, imgsz))
+        out, _, _, _ = self.forward(torch.randn(2, imgc, imgsz, imgsz))
         print('Meta','VAE' if is_vae else 'AE', end=' ')
         print([2, imgc, imgsz, imgsz], '>:', h.shape, ':<', list(out.shape))
-
 
 
     def extra_repr(self):
@@ -116,8 +134,8 @@ class AELearner(nn.Module):
 
         for name, param in self.config:
             if name is 'conv2d':
-                tmp = 'conv2d:(ch_out:%d, ch_in:%d, k:%dx%d, stride:%d, padding:%d)'\
-                      %(param[0], param[1], param[2], param[3], param[4], param[5],)
+                tmp = 'conv2d:(ch_in:%d, ch_out:%d, k:%dx%d, stride:%d, padding:%d)'\
+                      %(param[1], param[0], param[2], param[3], param[4], param[5],)
                 info += tmp + '\n'
 
             elif name is 'convt2d':
@@ -145,7 +163,7 @@ class AELearner(nn.Module):
             elif name is 'max_pool2d':
                 tmp = 'max_pool2d:(k:%d, stride:%d, padding:%d)'%(param[0], param[1], param[2])
                 info += tmp + '\n'
-            elif name in ['flatten', 'tanh', 'relu', 'upsample', 'reshape', 'sigmoid', 'use_logits']:
+            elif name in ['flatten', 'tanh', 'relu', 'upsample', 'reshape', 'sigmoid', 'use_logits', 'bn']:
                 tmp = name + ':' + str(tuple(param))
                 info += tmp + '\n'
             else:
@@ -167,6 +185,7 @@ class AELearner(nn.Module):
             vars = self.vars
 
         idx = 0
+        bn_idx = 0
         input = x
 
         for name, param in self.config:
@@ -187,6 +206,12 @@ class AELearner(nn.Module):
                 x = F.linear(x, w, b)
                 idx += 2
                 # print('forward:', idx, x.norm().item())
+            elif name is 'bn':
+                w, b = vars[idx:(idx + 2)]
+                running_mean, running_var = self.vars_bn[bn_idx:(bn_idx+2)]
+                x = F.batch_norm(x, running_mean, running_var, weight=w, bias=b, training=True)
+                idx += 2
+                bn_idx += 2
 
             elif name is 'usigma_layer':
                 w1, b1 = vars[idx:(idx + 2)]
@@ -236,8 +261,8 @@ class AELearner(nn.Module):
                 raise NotImplementedError
 
         # make sure variable is used properly
-        assert idx == len(self.vars)
-
+        assert idx == len(vars)
+        assert bn_idx == len(self.vars_bn)
 
 
         if self.is_vae:
@@ -284,6 +309,7 @@ class AELearner(nn.Module):
             vars = self.vars
 
         idx = 0
+        bn_idx = 0
 
         for name, param in self.config:
             if name is 'conv2d':
@@ -300,6 +326,13 @@ class AELearner(nn.Module):
                 w, b = vars[idx:(idx + 2)]
                 x = F.linear(x, w, b)
                 idx += 2
+            elif name is 'bn':
+                w, b = vars[idx:(idx + 2)]
+                # TODO: can not be written as running_mean, running_var = self.vars_bn[bn_idx:(bn_idx+1)]
+                running_mean, running_var = self.vars_bn[bn_idx], self.vars_bn[bn_idx+1]
+                x = F.batch_norm(x, running_mean, running_var, weight=w, bias=b, training=False)
+                idx += 2
+                bn_idx += 2
             elif name is 'usigma_layer':
                 w1, b1 = vars[idx:(idx + 2)]
                 w2, b2 = vars[idx + 2:(idx + 4)]
@@ -351,6 +384,7 @@ class AELearner(nn.Module):
                 raise NotImplementedError
 
         assert idx == self.hidden_var_idx
+        assert bn_idx == self.hidden_var_bn_idx
 
         return x
 
@@ -370,6 +404,7 @@ class AELearner(nn.Module):
         # get decoder network config
         decoder_config = self.config[self.hidden_config_idx+1:]
         idx = self.hidden_var_idx
+        bn_idx = self.hidden_var_bn_idx
 
         x = h
         for name, param in decoder_config:
@@ -387,7 +422,13 @@ class AELearner(nn.Module):
                 w, b = vars[idx:(idx + 2)]
                 x = F.linear(x, w, b)
                 idx += 2
-
+            elif name is 'bn':
+                w, b = vars[idx:(idx + 2)]
+                # TODO: can not be written as running_mean, running_var = self.vars_bn[bn_idx:(bn_idx+1)]
+                running_mean, running_var = self.vars_bn[bn_idx], self.vars_bn[bn_idx+1]
+                x = F.batch_norm(x, running_mean, running_var, weight=w, bias=b, training=False)
+                idx += 2
+                bn_idx += 2
             elif name is 'usigma_layer':
                 w1, b1 = vars[idx:(idx + 2)]
                 w2, b2 = vars[idx+2:(idx + 4)]
@@ -428,7 +469,8 @@ class AELearner(nn.Module):
 
         # print(self.hidden_var_idx, idx, len(self.vars))
 
-        assert  idx == len(self.vars)
+        assert  idx == len(vars)
+        assert  bn_idx == len(self.vars_bn)
 
         if self.use_logits:
             x = torch.sigmoid(x)
@@ -447,6 +489,10 @@ class AELearner(nn.Module):
             vars = self.vars
         h = self.forward_encoder(x, vars)
         x_hat = self.forward_decoder(h, vars)
+
+        w,b = self.vars[2], self.vars[3]
+        running_mean, running_var = self.vars_bn[0], self.vars_bn[1]
+        print(w.norm().item(), b.norm().item(), running_mean.norm().item(), running_var.norm().item())
 
         return x_hat
 

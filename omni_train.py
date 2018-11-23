@@ -250,7 +250,7 @@ def main(args):
 
 
         # save checkpoint.
-        if epoch % 30000 == 0:
+        if epoch % 10000 == 0:
             date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             mdl_file = os.path.join(args.ckpt_dir, args.exp + '_%d'%epoch  + '_' + date_str + '.mdl')
             torch.save(net.state_dict(), mdl_file)

@@ -153,7 +153,7 @@ class AE(nn.Module):
 
 
 
-        tmp = self.encoder(torch.Tensor(2, self.imgc, self.imgsz, self.imgsz))
+        tmp = self.encoder(torch.randn(2, self.imgc, self.imgsz, self.imgsz))
         out = self.decoder(tmp)
         print('x:', [2, self.imgc, self.imgsz, self.imgsz], 'h:', tmp.shape, 'out:', out.shape, 'h_dim:', self.h_dim)
         self.h_dim = args.h_dim = tmp.size(1)

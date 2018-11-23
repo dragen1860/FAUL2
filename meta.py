@@ -42,9 +42,11 @@ class MetaAE(nn.Module):
             else:
                 config = [
                     ('conv2d', [args.conv_ch, 1, 5, 5, 5, 0]),  # the first
+                    ('bn', [args.conv_ch]),
                     ('relu', [True]),
                     ('max_pool2d', [2, 2, 0]),
-                    ('conv2d', [args.conv_ch, args.conv_ch, 3, 3, 3, 0]),  #
+                    ('conv2d', [args.conv_ch, args.conv_ch, 3, 3, 3, 0]),
+                    ('bn', [args.conv_ch]),
                     ('relu', [True]),
                     ('max_pool2d', [2, 2, 0]),
                     ('flatten', []),
@@ -53,11 +55,14 @@ class MetaAE(nn.Module):
 
                     # [ch_out, ch_in]
                     ('reshape', [args.conv_ch, 1, 1]),
-                    ('convt2d', [args.conv_ch, args.conv_ch, 3, 3, 1, 0]),  # defactor1
+                    ('convt2d', [args.conv_ch, args.conv_ch, 3, 3, 1, 0]),
+                    ('bn', [args.conv_ch]),
                     ('relu', [True]),
                     ('convt2d', [args.conv_ch, args.conv_ch, 3, 3, 2, 0]),
+                    ('bn', [args.conv_ch]),
                     ('relu', [True]),
                     ('convt2d', [args.conv_ch, args.conv_ch, 3, 3, 3, 0]),
+                    ('bn', [args.conv_ch]),
                     ('relu', [True]),
                     ('convt2d', [args.conv_ch, 1, 4, 4, 3, 0]),
                     ('use_logits', [])
@@ -111,7 +116,7 @@ class MetaAE(nn.Module):
         self.meta_optim = optim.Adam(self.learner.parameters(), lr=self.meta_lr)
 
         # hidden to n_way
-        h = self.forward_encoder(torch.Tensor(2, args.imgc, args.imgsz, args.imgsz))
+        h = self.forward_encoder(torch.randn(2, args.imgc, args.imgsz, args.imgsz))
         args.h_dim = h.size(1)
         print('overwrite h_dim from actual computation of network.')
         self.classifier = nn.Sequential(nn.Linear(args.h_dim, self.n_way))
@@ -356,7 +361,7 @@ class MetaAE(nn.Module):
             fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, fast_weights)))
 
 
-        print('FT loss:', np.array(losses).astype(np.float16))
+        print('FT:', np.array(losses).astype(np.float16))
 
         # TODO:
         with torch.no_grad():
