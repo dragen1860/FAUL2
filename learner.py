@@ -173,11 +173,15 @@ class AELearner(nn.Module):
 
 
 
-    def forward(self, x, vars=None):
+    def forward(self, x, vars=None, update_bn_statistics=True):
         """
-
+        This function can be called by finetunning, however, in finetunning, we dont wish to update
+        running_mean/running_var. Thought weights/bias of bn is updated, it has been separated by fast_weights.
+        Indeed, to not update running_mean/running_var, we need set update_bn_statistics=False
+        but weight/bias will be updated and not dirty initial theta parameters via fast_weiths.
         :param x: [b, 1, 28, 28]
         :param vars:
+        :param update_bn_statistics: set False to not update
         :return: x, loss, likelihood, kld
         """
 
@@ -209,7 +213,7 @@ class AELearner(nn.Module):
             elif name is 'bn':
                 w, b = vars[idx:(idx + 2)]
                 running_mean, running_var = self.vars_bn[bn_idx:(bn_idx+2)]
-                x = F.batch_norm(x, running_mean, running_var, weight=w, bias=b, training=True)
+                x = F.batch_norm(x, running_mean, running_var, weight=w, bias=b, training=update_bn_statistics)
                 idx += 2
                 bn_idx += 2
 
@@ -490,9 +494,9 @@ class AELearner(nn.Module):
         h = self.forward_encoder(x, vars)
         x_hat = self.forward_decoder(h, vars)
 
-        w,b = self.vars[2], self.vars[3]
-        running_mean, running_var = self.vars_bn[0], self.vars_bn[1]
-        print(w.norm().item(), b.norm().item(), running_mean.norm().item(), running_var.norm().item())
+        # w,b = self.vars[2], self.vars[3]
+        # running_mean, running_var = self.vars_bn[0], self.vars_bn[1]
+        # print(w.norm().item(), b.norm().item(), running_mean.norm().item(), running_var.norm().item())
 
         return x_hat
 

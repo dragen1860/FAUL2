@@ -2,12 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="543242f9-cc37-46fd-b752-21cae4eb5c80" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/learner.py" beforeDir="false" afterPath="$PROJECT_DIR$/learner.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/meta.py" beforeDir="false" afterPath="$PROJECT_DIR$/meta.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/nohup.out" beforeDir="false" afterPath="$PROJECT_DIR$/nohup.out" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/normal.py" beforeDir="false" afterPath="$PROJECT_DIR$/normal.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/omni_train.py" beforeDir="false" afterPath="$PROJECT_DIR$/omni_train.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -33,7 +30,7 @@
         <counts>
           <entry key="gitignore" value="1" />
           <entry key="ipynb" value="2" />
-          <entry key="py" value="106" />
+          <entry key="py" value="107" />
           <entry key="pyi" value="1" />
         </counts>
       </usages-collector>
@@ -41,29 +38,29 @@
         <counts>
           <entry key="IPNB" value="2" />
           <entry key="PLAIN_TEXT" value="1" />
-          <entry key="Python" value="106" />
+          <entry key="Python" value="107" />
           <entry key="PythonStub" value="1" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="py" value="40446" />
+          <entry key="py" value="41507" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="Python" value="40446" />
+          <entry key="Python" value="41507" />
         </counts>
       </usages-collector>
     </session>
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/normal.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="528">
-              <caret line="156" column="31" lean-forward="true" selection-start-line="156" selection-start-column="31" selection-end-line="156" selection-end-column="31" />
+              <caret line="312" column="27" selection-start-line="312" selection-start-column="27" selection-end-line="312" selection-end-column="27" />
               <folding>
                 <element signature="e#0#13#0" expanded="true" />
                 <marker date="1542959708511" expanded="true" signature="275:321" ph="..." />
@@ -74,10 +71,10 @@
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/omniglotNShot.py">
+        <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/torch/nn/modules/module.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1210">
-              <caret line="59" column="30" selection-start-line="59" selection-start-column="30" selection-end-line="59" selection-end-column="30" />
+            <state relative-caret-position="301">
+              <caret line="573" column="8" selection-start-line="573" selection-start-column="8" selection-end-line="573" selection-end-column="8" />
             </state>
           </provider>
         </entry>
@@ -94,14 +91,14 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/meta.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="602">
-              <caret line="119" column="30" lean-forward="true" selection-start-line="119" selection-start-column="30" selection-end-line="119" selection-end-column="30" />
+            <state relative-caret-position="-322">
+              <caret line="335" column="13" lean-forward="true" selection-start-line="335" selection-start-column="13" selection-end-line="335" selection-end-column="13" />
               <folding>
                 <element signature="e#0#13#0" expanded="true" />
-                <marker date="1542959694807" expanded="true" signature="4868:4976" ph="..." />
+                <marker date="1542961912827" expanded="true" signature="4868:4976" ph="..." />
               </folding>
             </state>
           </provider>
@@ -110,11 +107,11 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/learner.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="418">
-              <caret line="493" column="7" selection-start-line="493" selection-start-column="7" selection-end-line="493" selection-end-column="7" />
+            <state relative-caret-position="4752">
+              <caret line="216" column="24" selection-start-line="216" selection-start-column="24" selection-end-line="216" selection-end-column="24" />
               <folding>
                 <element signature="e#0#13#0" expanded="true" />
-                <marker date="1542959681251" expanded="true" signature="17928:18393" ph="..." />
+                <marker date="1542961612669" expanded="true" signature="18434:18905" ph="..." />
               </folding>
             </state>
           </provider>
@@ -123,8 +120,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/bn_test.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="506">
-              <caret line="23" column="19" selection-start-line="23" selection-start-column="19" selection-end-line="23" selection-end-column="19" />
+            <state relative-caret-position="462">
+              <caret line="21" selection-start-line="21" selection-end-line="21" />
               <folding>
                 <element signature="e#0#13#0" expanded="true" />
                 <marker date="1542959342304" expanded="true" signature="91:460" ph="..." />
@@ -136,8 +133,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/torch/nn/functional.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="301">
-              <caret line="1240" column="4" selection-start-line="1240" selection-start-column="4" selection-end-line="1240" selection-end-column="4" />
+            <state relative-caret-position="543">
+              <caret line="1251" column="28" selection-start-line="1251" selection-start-column="28" selection-end-line="1251" selection-end-column="28" />
             </state>
           </provider>
         </entry>
@@ -255,9 +252,9 @@
         <option value="$PROJECT_DIR$/omni_test.py" />
         <option value="$PROJECT_DIR$/omni_train.py" />
         <option value="$PROJECT_DIR$/bn_test.py" />
+        <option value="$PROJECT_DIR$/normal.py" />
         <option value="$PROJECT_DIR$/learner.py" />
         <option value="$PROJECT_DIR$/meta.py" />
-        <option value="$PROJECT_DIR$/normal.py" />
       </list>
     </option>
   </component>
@@ -539,13 +536,6 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/torch/nn/modules/module.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="37">
-          <caret line="672" column="8" selection-start-line="672" selection-start-column="8" selection-end-line="672" selection-end-column="8" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/torch/nn/modules/conv.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="301">
@@ -771,13 +761,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/torch/nn/functional.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="301">
-          <caret line="1240" column="4" selection-start-line="1240" selection-start-column="4" selection-end-line="1240" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/omni_train.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="462">
@@ -788,10 +771,36 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/torch/nn/modules/module.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="301">
+          <caret line="573" column="8" selection-start-line="573" selection-start-column="8" selection-end-line="573" selection-end-column="8" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/normal.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="528">
+          <caret line="312" column="27" selection-start-line="312" selection-start-column="27" selection-end-line="312" selection-end-column="27" />
+          <folding>
+            <element signature="e#0#13#0" expanded="true" />
+            <marker date="1542959708511" expanded="true" signature="275:321" ph="..." />
+            <marker date="1542959708511" expanded="true" signature="7984:8149" ph="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/conda/lib/python3.6/site-packages/torch/nn/functional.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="543">
+          <caret line="1251" column="28" selection-start-line="1251" selection-start-column="28" selection-end-line="1251" selection-end-column="28" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/bn_test.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="506">
-          <caret line="23" column="19" selection-start-line="23" selection-start-column="19" selection-end-line="23" selection-end-column="19" />
+        <state relative-caret-position="462">
+          <caret line="21" selection-start-line="21" selection-end-line="21" />
           <folding>
             <element signature="e#0#13#0" expanded="true" />
             <marker date="1542959342304" expanded="true" signature="91:460" ph="..." />
@@ -801,34 +810,22 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/learner.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="418">
-          <caret line="493" column="7" selection-start-line="493" selection-start-column="7" selection-end-line="493" selection-end-column="7" />
+        <state relative-caret-position="4752">
+          <caret line="216" column="24" selection-start-line="216" selection-start-column="24" selection-end-line="216" selection-end-column="24" />
           <folding>
             <element signature="e#0#13#0" expanded="true" />
-            <marker date="1542959681251" expanded="true" signature="17928:18393" ph="..." />
+            <marker date="1542961612669" expanded="true" signature="18434:18905" ph="..." />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/meta.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="602">
-          <caret line="119" column="30" lean-forward="true" selection-start-line="119" selection-start-column="30" selection-end-line="119" selection-end-column="30" />
+        <state relative-caret-position="-322">
+          <caret line="335" column="13" lean-forward="true" selection-start-line="335" selection-start-column="13" selection-end-line="335" selection-end-column="13" />
           <folding>
             <element signature="e#0#13#0" expanded="true" />
-            <marker date="1542959694807" expanded="true" signature="4868:4976" ph="..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/normal.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="528">
-          <caret line="156" column="31" lean-forward="true" selection-start-line="156" selection-start-column="31" selection-end-line="156" selection-end-column="31" />
-          <folding>
-            <element signature="e#0#13#0" expanded="true" />
-            <marker date="1542959708511" expanded="true" signature="275:321" ph="..." />
-            <marker date="1542959708511" expanded="true" signature="7984:8149" ph="..." />
+            <marker date="1542961912827" expanded="true" signature="4868:4976" ph="..." />
           </folding>
         </state>
       </provider>

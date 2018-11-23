@@ -318,7 +318,13 @@ class MetaAE(nn.Module):
 
     def finetuning(self, x_spt, y_spt, x_qry, y_qry, update_num, h_manifold=None):
         """
+        finetunning will update weights/bias of batch_norm as well, but the running_mean
+        and running_var will not be updated since we set training=False?
 
+        In order keep state of intial theta network, we can use fast_weighs to separate from updated
+        weights/bias from original. But running_mean/vars will still be updated in learner.forward() function.
+        Therefore, we use  update_bn_statistics=False to force no updating of running_mean/vars in finnuting phase.
+        This will not affect normal training phase.
         :param x_spt: [task_num, sptsz, c_, h, w]
         :param y_spt: [task_num, sptsz]
         :param x_qry:
@@ -332,9 +338,14 @@ class MetaAE(nn.Module):
         assert len(x_spt.shape) == 4
         assert len(x_qry.shape) == 4
 
+
+
+        # running_mean, running_var = self.learner.vars_bn[0], self.learner.vars_bn[1]
+        # print('>>before:', running_mean.norm().item(), running_var.norm().item())
+
         losses = []
         # use theta to forward
-        pred, loss, likelihood, kld = self.learner(x_spt)
+        pred, loss, likelihood, kld = self.learner(x_spt, update_bn_statistics=False)
         losses.append(loss.item())
 
         # 2. grad on theta
@@ -350,7 +361,7 @@ class MetaAE(nn.Module):
         # 4. continue to update
         for k in range(1, update_num):
             # 1. run the i-th task and compute loss for k=1~K-1
-            pred, loss, likelihood, kld = self.learner(x_spt, fast_weights)
+            pred, loss, likelihood, kld = self.learner(x_spt, fast_weights, update_bn_statistics=False)
             losses.append(loss.item())
             # clear fast_weights grad info
             self.learner.zero_grad(fast_weights)
@@ -362,6 +373,10 @@ class MetaAE(nn.Module):
 
 
         print('FT:', np.array(losses).astype(np.float16))
+
+        # running_mean, running_var = self.learner.vars_bn[0], self.learner.vars_bn[1]
+        # print('after :', running_mean.norm().item(), running_var.norm().item())
+
 
         # TODO:
         with torch.no_grad():
