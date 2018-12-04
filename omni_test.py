@@ -243,7 +243,7 @@ def test_progress(args, net, device, viz=None, global_step=0):
             viz.images(qry_x_hat1, nrow=8, win=exp+'qry_x_hat1', opts=dict(title=exp+'qry_x_hat1'))
 
 
-        if batchidx > 3:
+        if batchidx > 0:
             break
 
 

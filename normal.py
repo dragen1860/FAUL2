@@ -66,7 +66,7 @@ class AE(nn.Module):
                 raise NotImplementedError
             else:
                 self.encoder = nn.Sequential(
-                    nn.Conv2d(1, args.conv_ch, kernel_size=5, stride=5, padding=0),
+                    nn.Conv2d(self.imgc, args.conv_ch, kernel_size=5, stride=5, padding=0),
                     nn.BatchNorm2d(args.conv_ch),
                     nn.ReLU(inplace=True),
                     nn.MaxPool2d(kernel_size=2, stride=2),
@@ -89,7 +89,7 @@ class AE(nn.Module):
                 nn.ConvTranspose2d(args.conv_ch, args.conv_ch, kernel_size=3, stride=3, padding=0),
                 nn.BatchNorm2d(args.conv_ch),
                 nn.ReLU(inplace=True),
-                nn.ConvTranspose2d(args.conv_ch, 1, kernel_size=4, stride=3, padding=0),
+                nn.ConvTranspose2d(args.conv_ch, self.imgc, kernel_size=4, stride=3, padding=0),
 
             )
 

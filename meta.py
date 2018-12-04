@@ -8,6 +8,9 @@ import  numpy as np
 
 from    learner import AELearner
 from    copy import deepcopy
+from    sklearn import cluster, metrics
+
+
 
 class MetaAE(nn.Module):
     """
@@ -325,8 +328,8 @@ class MetaAE(nn.Module):
         weights/bias from original. But running_mean/vars will still be updated in learner.forward() function.
         Therefore, we use  update_bn_statistics=False to force no updating of running_mean/vars in finnuting phase.
         This will not affect normal training phase.
-        :param x_spt: [task_num, sptsz, c_, h, w]
-        :param y_spt: [task_num, sptsz]
+        :param x_spt: [sptsz, c_, h, w]
+        :param y_spt: [sptsz]
         :param x_qry:
         :param y_qry:
         :param update_num: update for fine-tuning
@@ -339,14 +342,11 @@ class MetaAE(nn.Module):
         assert len(x_qry.shape) == 4
 
 
-
-        # running_mean, running_var = self.learner.vars_bn[0], self.learner.vars_bn[1]
-        # print('>>before:', running_mean.norm().item(), running_var.norm().item())
-
         losses = []
         # use theta to forward
         pred, loss, likelihood, kld = self.learner(x_spt, update_bn_statistics=False)
         losses.append(loss.item())
+        h_qry1_amis, h_qry1_arss = [], []
 
         # 2. grad on theta
         # clear theta grad info
@@ -371,8 +371,21 @@ class MetaAE(nn.Module):
             # 3. theta_pi = theta_pi - train_lr * grad
             fast_weights = list(map(lambda p: p[1] - self.update_lr * p[0], zip(grad, fast_weights)))
 
+            with torch.no_grad():
+                # [qrysz, 1, 64, 64] => [qrysz, d_dim]
+                h_qry1 = self.learner.forward_encoder(x_qry, fast_weights)
+                h_qry1_np = h_qry1.detach().cpu().numpy()
+                # [qrysz]
+                qry_y_np = y_qry.detach().cpu().numpy()
+                h_qry1_pred = cluster.KMeans(n_clusters=self.n_way, random_state=1).fit(h_qry1_np).labels_
+                h_qry1_amis.append(metrics.adjusted_mutual_info_score(qry_y_np, h_qry1_pred))
+                h_qry1_arss.append(metrics.adjusted_rand_score(qry_y_np, h_qry1_pred))
 
-        print('FT:', np.array(losses).astype(np.float16))
+
+        print('Loss:', np.array(losses).astype(np.float16))
+        print('AMI :', np.array(h_qry1_amis).astype(np.float16))
+        print('ARS :', np.array(h_qry1_arss).astype(np.float16))
+
 
         # running_mean, running_var = self.learner.vars_bn[0], self.learner.vars_bn[1]
         # print('after :', running_mean.norm().item(), running_var.norm().item())
